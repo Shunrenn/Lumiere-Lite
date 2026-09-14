@@ -117,7 +117,7 @@ Content-Type: application/json
 
 ## TASK 3 — Wire Vendor Management Screen
 
-**Status:** Code wired and built successfully (`pnpm build` passed). Live verification performed against `https://lumiere-production-f6a1.up.railway.app`.
+**Status:** Code wired and built successfully (`pnpm build` passed). Live verification performed against `https://lumiere-production-f6a1.up.railway.app`. Vercel deployment commit hash: `a4b3be2`.
 
 ### Raw HTTP Verification Log
 
