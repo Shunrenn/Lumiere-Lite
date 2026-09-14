@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Download, Plus, Search, X } from 'lucide-react'
 import { usePortal } from '@/lib/store'
 import { getDeficitLines, lineCost, type DeficitLine } from '@/lib/warehouse-replenishment'
+import { createDeficitItemApi, fetchDeficitQueueApi, updateDeficitStatusApi } from '@/lib/deficitApi'
 import { DeficitTable } from '@/components/warehouse/replenishment/DeficitTable'
 import { GeneratePOModal } from '@/components/warehouse/replenishment/GeneratePOModal'
 import { AddMasterItemModal, type MasterItemDraft } from '@/components/warehouse/replenishment/AddMasterItemModal'
@@ -28,6 +29,37 @@ export function ReplenishmentModule({ onClose }: ReplenishmentModuleProps) {
   const [bulkOpen, setBulkOpen] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
+  useEffect(() => {
+    let active = true
+    fetchDeficitQueueApi().then((items) => {
+      if (!active || !items.length) return
+      const mapped: DeficitLine[] = items.map((item) => ({
+        id: item.id,
+        eventId: item.eventId || undefined,
+        eventTitle: item.eventName || undefined,
+        itemName: item.itemName,
+        category: (item.itemCategory as any) || 'General',
+        unit: 'pcs',
+        triggerSource: 'Auto-Threshold',
+        currentStock: 0,
+        threshold: item.quantityNeeded,
+        costPerUnit: 100,
+        priority: (item.urgencyLevel as any) || 'Medium',
+        status: (item.status as any) || 'Not Purchased',
+        primaryVendorId: '',
+        quantityNeeded: item.quantityNeeded,
+      }))
+      setLines((prev) => {
+        const existingIds = new Set(prev.map((l) => l.id))
+        const newOnly = mapped.filter((m) => !existingIds.has(m.id))
+        return [...newOnly, ...prev]
+      })
+    })
+    return () => {
+      active = false
+    }
+  }, [])
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return lines
@@ -51,12 +83,12 @@ export function ReplenishmentModule({ onClose }: ReplenishmentModuleProps) {
     return { groups: [...groups.entries()], general }
   }, [filtered])
 
-
-  const handleGeneratePO = (id: string, quantity: number, vendorId: string) => {
+  const handleGeneratePO = async (id: string, quantity: number, vendorId: string) => {
     setLines((prev) =>
       prev.map((line) => (line.id === id ? { ...line, status: 'In Procurement', quantityNeeded: quantity, primaryVendorId: vendorId } : line)),
     )
     setPoLine(null)
+    await updateDeficitStatusApi(id, 'In Procurement')
   }
 
   const handleSaveEdit = (draft: MasterItemDraft) => {
@@ -82,9 +114,18 @@ export function ReplenishmentModule({ onClose }: ReplenishmentModuleProps) {
     setEditLine(null)
   }
 
-  const handleAddMasterItem = (draft: MasterItemDraft) => {
+  const handleAddMasterItem = async (draft: MasterItemDraft) => {
+    const needed = Math.max(1, draft.threshold - draft.currentStock)
+    const res = await createDeficitItemApi({
+      eventId: draft.eventId,
+      itemCategory: draft.category,
+      itemName: draft.itemName,
+      quantityNeeded: needed,
+      urgencyLevel: draft.priority,
+    })
+
     const newLine: DeficitLine = {
-      id: `def-master-${Date.now()}`,
+      id: res?.id || `def-master-${Date.now()}`,
       eventId: draft.eventId,
       eventTitle: draft.eventTitle,
       itemName: draft.itemName,
@@ -97,7 +138,7 @@ export function ReplenishmentModule({ onClose }: ReplenishmentModuleProps) {
       priority: draft.priority,
       status: 'Not Purchased',
       primaryVendorId: draft.primaryVendorId,
-      quantityNeeded: Math.max(1, draft.threshold - draft.currentStock),
+      quantityNeeded: needed,
     }
     setLines((prev) => [newLine, ...prev])
     setAddOpen(false)
