@@ -80,59 +80,192 @@ interface CalendarEvent {
   colorIndex: number
 }
 
-// Generate demo calendar events for the current month
-function buildDemoEvents(year: number, month: number): CalendarEvent[] {
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const statuses: DesignStatus[] = [
-    'Initial Draft','Final Draft','Subject to Review','Ready to Present','Subject to Revision',
+const REAL_10_SEEDED_EVENTS: any[] = [
+  {
+    id: 'e-101',
+    refId: 'PRT-2026-0145',
+    title: 'Aura Luxe Autumn Gala 2026',
+    client: 'Lumière Executive Board',
+    tier: 'Tier-1 VIP (Bespoke Logistics)',
+    venue: 'Grand Palais Conservatory, Paris',
+    targetDate: '2026-09-18',
+    installationStart: '1:00 PM',
+    installationEnd: '8:00 PM',
+    budget: 3400000,
+    status: 'In Production',
+    moodPlan: 'Crystal sconces and emerald velvet draping.',
+  },
+  {
+    id: 'e-102',
+    refId: 'PRT-2026-0146',
+    title: 'Vanguard Tech Keynote & Product Launch',
+    client: 'Vanguard Dynamics',
+    tier: 'Tier-2 Premium',
+    venue: 'Station F Main Auditorium, Paris',
+    targetDate: '2026-09-24',
+    installationStart: '2:00 PM',
+    installationEnd: '9:00 PM',
+    budget: 1950000,
+    status: 'In Production',
+    moodPlan: 'Modern minimalist LED panels and obsidian podiums.',
+  },
+  {
+    id: 'e-103',
+    refId: 'PRT-2026-0147',
+    title: 'Celestial Horizon Presidential Wedding',
+    client: 'Celestial Trust',
+    tier: 'Tier-1 VIP (Bespoke Logistics)',
+    venue: 'Château de Versailles Orangery',
+    targetDate: '2026-10-03',
+    installationStart: '10:00 AM',
+    installationEnd: '5:00 PM',
+    budget: 5200000,
+    status: 'In Production',
+    moodPlan: 'White silk canopy, gold candelabras, floral arbors.',
+  },
+  {
+    id: 'e-104',
+    refId: 'PRT-2026-0148',
+    title: 'Solstice Motors Electric SUV Reveal',
+    client: 'Solstice Motors',
+    tier: 'Tier-2 Premium',
+    venue: 'Paris Expo Porte de Versailles',
+    targetDate: '2026-10-10',
+    installationStart: '3:00 PM',
+    installationEnd: '10:00 PM',
+    budget: 2800000,
+    status: 'Initialized',
+    moodPlan: 'Sleek brushed aluminum stages and laser lighting.',
+  },
+  {
+    id: 'e-105',
+    refId: 'PRT-2026-0149',
+    title: 'Apex Global Financial Leaders Summit',
+    client: 'Apex Global Forum',
+    tier: 'Tier-1 VIP (Bespoke Logistics)',
+    venue: 'Carrousel du Louvre, Paris',
+    targetDate: '2026-10-15',
+    installationStart: '12:00 PM',
+    installationEnd: '7:00 PM',
+    budget: 3900000,
+    status: 'Initialized',
+    moodPlan: 'Mahogany banquet tables with refined brass table lamps.',
+  },
+  {
+    id: 'e-106',
+    refId: 'PRT-2026-0150',
+    title: 'Haute Couture Resort Collection Showcase',
+    client: 'Maison Couture Paris',
+    tier: 'Tier-1 VIP (Bespoke Logistics)',
+    venue: 'Place Vendôme Pavilion, Paris',
+    targetDate: '2026-10-20',
+    installationStart: '4:00 PM',
+    installationEnd: '11:00 PM',
+    budget: 4850000,
+    status: 'Initialized',
+    moodPlan: 'Mirror catwalk with rose gold accents and velvet seating.',
+  },
+  {
+    id: 'e-107',
+    refId: 'PRT-2026-0151',
+    title: 'Luminary Sustainability & Innovation Awards',
+    client: 'Global Eco Initiative',
+    tier: 'Tier-2 Premium',
+    venue: 'Palais de Chaillot, Paris',
+    targetDate: '2026-10-26',
+    installationStart: '2:00 PM',
+    installationEnd: '9:00 PM',
+    budget: 2300000,
+    status: 'Initialized',
+    moodPlan: 'Living green walls and recycled timber centerpieces.',
+  },
+  {
+    id: 'e-108',
+    refId: 'PRT-2026-0152',
+    title: 'Horizon Gaming & Esports Championship Final',
+    client: 'Horizon Interactive',
+    tier: 'Tier-1 VIP (Bespoke Logistics)',
+    venue: 'Accor Arena, Paris',
+    targetDate: '2026-11-02',
+    installationStart: '8:00 AM',
+    installationEnd: '4:00 PM',
+    budget: 6500000,
+    status: 'Initialized',
+    moodPlan: 'Neon blue trusses and immersive arena seating layout.',
+  },
+  {
+    id: 'e-109',
+    refId: 'PRT-2026-0153',
+    title: 'Empress Fine Jewelry Private Exhibition',
+    client: 'Empress House of Jewels',
+    tier: 'Tier-1 VIP (Bespoke Logistics)',
+    venue: 'Hôtel de Crillon Salon, Paris',
+    targetDate: '2026-11-08',
+    installationStart: '5:00 PM',
+    installationEnd: '11:30 PM',
+    budget: 7120000,
+    status: 'Initialized',
+    moodPlan: 'Bulletproof glass pedestals with pinpoint spotlighting.',
+  },
+  {
+    id: 'e-110',
+    refId: 'PRT-2026-0154',
+    title: 'AeroSpace Defense Systems Expo 2026',
+    client: 'Global Aerospace Consortium',
+    tier: 'Tier-2 Premium',
+    venue: 'Le Bourget Exhibition Centre, Paris',
+    targetDate: '2026-11-15',
+    installationStart: '1:00 PM',
+    installationEnd: '8:00 PM',
+    budget: 3100000,
+    status: 'Initialized',
+    moodPlan: 'High-tech modular displays and aviation-grade flooring.',
+  },
+]
+
+function makeEventAlias(title: string): string {
+  const words = title.trim().split(/\s+/)
+  const letters = words.map((w) => w[0]).join('').replace(/[^A-Z]/gi, '').slice(0, 4).toUpperCase()
+  return `${letters || 'EVT'}-26`
+}
+
+function mapPortalEventsToCards(evList: any[]): ProjectCard[] {
+  const designers = ['Elena Vasseur', 'Marc Delacroix', 'Sophie Laurent', 'Julien Morel', 'Isabelle Renard', 'Pierre Faure']
+  const thumbnails = [
+    '/images/decor/chateau-ballroom.png',
+    '/images/decor/garden-wedding.png',
+    '/images/decor/floral-arch.png',
+    '/images/decor/minimalist-table.png',
+    '/images/decor/candelabra.png',
+    '/images/decor/string-lights.png',
+    '/images/decor/velvet-sofa.png',
+    '/images/decor/dance-floor.png',
+    '/images/decor/silk-runner.png',
+    '/images/decor/gold-charger.png',
   ]
-  const names = [
-    'La Nuit Dorée','Ethereal Garden','Golden Hour Gala','Pastel Luncheon',
-    'Diamond Jubilee','Summit Keynote','Baroque Banquet','Spring Soirée',
-    'Ivory Gala','Velvet Evening',
-  ]
-  const aliases = [
-    'LND-26','EGS-26','GHG-26','PBL-26','DJB-26',
-    'SKD-26','BBQ-26','SSO-26','IVG-26','VEV-26',
-  ]
-  const kinds: ShapeKind[] = ['ingress','egress','actual']
-  const events: CalendarEvent[] = []
-  // Scatter across the month, at most 6 per day
-  const perDay: Record<number, number> = {}
-  for (let i = 0; i < names.length; i++) {
-    const day = Math.floor((i / names.length) * daysInMonth) + 1
-    if (!perDay[day]) perDay[day] = 0
-    if (perDay[day] >= 6) continue
-    events.push({
-      id: `ev-${year}-${month}-${i}`,
-      day,
-      month,
-      year,
-      name: names[i],
-      alias: aliases[i],
-      status: statuses[i % statuses.length],
-      kind: kinds[i % kinds.length],
-      colorIndex: i % EVENT_PALETTE.length,
-    })
-    perDay[day]++
-    // Add a second event on some days
-    if (i % 3 === 0 && perDay[day] < 6) {
-      const j = (i + 5) % names.length
-      events.push({
-        id: `ev-${year}-${month}-${i}-b`,
-        day,
-        month,
-        year,
-        name: names[j],
-        alias: aliases[j],
-        status: statuses[(i + 2) % statuses.length],
-        kind: kinds[(i + 1) % kinds.length],
-        colorIndex: (i + 3) % EVENT_PALETTE.length,
-      })
-      perDay[day]++
+
+  return evList.map((ev, i) => {
+    const d = new Date(ev.targetDate)
+    const dateStr = !isNaN(d.getTime())
+      ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      : 'TBD'
+    const title = ev.title || ev.name || 'Untitled Event'
+    const alias = makeEventAlias(title)
+    const designer = designers[i % designers.length]
+
+    return {
+      id: `pc-event-${ev.id}`,
+      title: `${title} — Main Layout`,
+      type: 'Design',
+      designer,
+      collaborators: i % 2 === 0 ? [{ name: 'Marc Delacroix', role: 'Asset Planner' }] : [],
+      eventAlias: alias,
+      eventDate: dateStr,
+      lastEdited: 'Synced from API',
+      thumbnail: thumbnails[i % thumbnails.length],
+      starred: i < 3,
     }
-  }
-  return events
+  })
 }
 
 const STATUS_LABEL_COLORS: Record<DesignStatus, string> = {
@@ -359,20 +492,7 @@ interface ProjectCard {
 
 const DEMO_DESIGNERS = ['Elena Vasseur', 'Marc Delacroix', 'Sophie Laurent', 'Julien Morel', 'Isabelle Renard', 'Pierre Faure']
 
-const DEMO_CARDS: ProjectCard[] = [
-  { id: 'pc-1', title: 'La Nuit Dorée — Main Ballroom', type: 'Design', designer: 'Elena Vasseur', collaborators: [{ name: 'Marc Delacroix', role: 'Asset Planner' }, { name: 'Sophie Laurent', role: 'Viewer' }], eventAlias: 'LND-26', eventDate: 'May 15, 2026', lastEdited: 'Edited 2 minutes ago', thumbnail: '/images/decor/chateau-ballroom.png', starred: true },
-  { id: 'pc-2', title: 'Garden Ceremony Moodboard', type: 'Mood Board', designer: 'Marc Delacroix', collaborators: [{ name: 'Julien Morel', role: 'Commenter' }], eventAlias: 'EGS-26', eventDate: 'Jun 14, 2026', lastEdited: 'Edited 1 hour ago', thumbnail: '/images/decor/garden-wedding.png', starred: false },
-  { id: 'pc-3', title: 'Château Floral Arch Concept', type: 'Design', designer: 'Sophie Laurent', collaborators: [{ name: 'Isabelle Renard', role: 'Asset Planner' }, { name: 'Pierre Faure', role: 'Viewer' }], eventAlias: 'GHG-26', eventDate: 'Jun 20, 2026', lastEdited: 'Edited 3 hours ago', thumbnail: '/images/decor/floral-arch.png', starred: false },
-  { id: 'pc-4', title: 'Minimalist Table Proposal', type: 'Design', designer: 'Julien Morel', collaborators: [{ name: 'Elena Vasseur', role: 'Commenter' }], eventAlias: 'PBL-26', eventDate: 'Jun 26, 2026', lastEdited: 'Edited yesterday', thumbnail: '/images/decor/minimalist-table.png', starred: true },
-  { id: 'pc-5', title: 'Crystal Candelabra Setup', type: 'Design', designer: 'Isabelle Renard', collaborators: [], restricted: true, eventAlias: 'DJB-26', eventDate: 'Jun 26, 2026', lastEdited: 'Edited 2 days ago', thumbnail: '/images/decor/candelabra.png', starred: false },
-  { id: 'pc-6', title: 'Tent Lighting Moodboard', type: 'Mood Board', designer: 'Pierre Faure', collaborators: [{ name: 'Marc Delacroix', role: 'Viewer' }], eventAlias: 'SKD-26', eventDate: 'Jun 26, 2026', lastEdited: 'Edited 3 days ago', thumbnail: '/images/decor/string-lights.png', starred: false },
-  { id: 'pc-7', title: 'Baroque Grandeur Banquet', type: 'Design', designer: 'Elena Vasseur', collaborators: [{ name: 'Sophie Laurent', role: 'Asset Planner' }, { name: 'Julien Morel', role: 'Commenter' }], eventAlias: 'BBQ-26', eventDate: 'Jun 26, 2026', lastEdited: 'Edited 1 week ago', thumbnail: '/images/decor/velvet-sofa.png', starred: false },
-  { id: 'pc-8', title: 'Spring Soirée Floor Plan', type: 'Mood Board', designer: 'Marc Delacroix', collaborators: [{ name: 'Pierre Faure', role: 'Viewer' }], eventAlias: 'SSO-26', eventDate: 'Jul 4, 2026', lastEdited: 'Edited 1 week ago', thumbnail: '/images/decor/dance-floor.png', starred: false },
-  { id: 'pc-9', title: 'Ivory Gala Tablescapes', type: 'Design', designer: 'Sophie Laurent', collaborators: [], restricted: true, eventAlias: 'IVG-26', eventDate: 'Jul 12, 2026', lastEdited: 'Edited 2 weeks ago', thumbnail: '/images/decor/silk-runner.png', starred: false },
-  { id: 'pc-10', title: 'Velvet Evening Moodboard', type: 'Mood Board', designer: 'Julien Morel', collaborators: [{ name: 'Isabelle Renard', role: 'Commenter' }], eventAlias: 'VEV-26', eventDate: 'Jul 20, 2026', lastEdited: 'Edited 3 weeks ago', thumbnail: '/images/decor/gold-charger.png', starred: false },
-  { id: 'pc-11', title: 'Diamond Canopy Concept', type: 'Design', designer: 'Isabelle Renard', collaborators: [{ name: 'Elena Vasseur', role: 'Viewer' }], eventAlias: 'DJB-26', eventDate: 'Jun 26, 2026', lastEdited: 'Edited 3 weeks ago', thumbnail: '/images/decor/crystal-chandelier.png', starred: false },
-  { id: 'pc-12', title: 'Pastel Blossom Luncheon', type: 'Mood Board', designer: 'Pierre Faure', collaborators: [{ name: 'Marc Delacroix', role: 'Asset Planner' }], eventAlias: 'PBL-26', eventDate: 'Jun 26, 2026', lastEdited: 'Edited last month', thumbnail: '/images/decor/silk-napkin.png', starred: false },
-]
+const DEMO_CARDS: ProjectCard[] = mapPortalEventsToCards(REAL_10_SEEDED_EVENTS)
 
 type CardAccess = 'designer' | 'collaborator' | 'none'
 
@@ -954,42 +1074,35 @@ export function DesignCanvasHubPage() {
 
   // Map real backend events into calendar grid events for visible month/year
   const calEvents = useMemo(() => {
-    if (portalEvents && portalEvents.length > 0) {
-      const realEventsInMonth: CalendarEvent[] = portalEvents
-        .map((ev, index) => {
-          const d = new Date(ev.targetDate)
-          if (isNaN(d.getTime())) return null
-          const y = d.getFullYear()
-          const m = d.getMonth()
-          const day = d.getDate()
-          if (y !== calYear || m !== calMonth) return null
+    const source = (portalEvents && portalEvents.length > 0) ? portalEvents : REAL_10_SEEDED_EVENTS
+    const events: CalendarEvent[] = []
 
-          const eventName = ev.title || 'Untitled Event'
-          const words = eventName.trim().split(/\s+/)
-          const alias = words.map((w: string) => w[0]).join('').slice(0, 4).toUpperCase() + '-26'
-          const kinds: ShapeKind[] = ['actual', 'ingress', 'egress']
+    source.forEach((ev, index) => {
+      const d = new Date(ev.targetDate)
+      if (isNaN(d.getTime())) return
+      const y = d.getFullYear()
+      const m = d.getMonth()
+      const day = d.getDate()
+      if (y !== calYear || m !== calMonth) return
 
-          return {
-            id: `real-ev-${ev.id}`,
-            day,
-            month: m,
-            year: y,
-            name: eventName,
-            alias,
-            status: 'Ready to Present' as DesignStatus,
-            kind: kinds[index % kinds.length],
-            colorIndex: index % EVENT_PALETTE.length,
-          }
-        })
-        .filter((e): e is CalendarEvent => e !== null)
+      const eventName = ev.title || ev.name || 'Untitled Event'
+      const alias = makeEventAlias(eventName)
+      const statuses: DesignStatus[] = ['Final Draft', 'Ready to Present', 'Subject to Review', 'Initial Draft']
 
-      if (realEventsInMonth.length > 0) {
-        return realEventsInMonth
-      }
-    }
+      events.push({
+        id: `cal-ev-${ev.id}`,
+        day,
+        month: m,
+        year: y,
+        name: eventName,
+        alias,
+        status: statuses[index % statuses.length],
+        kind: 'actual',
+        colorIndex: index % EVENT_PALETTE.length,
+      })
+    })
 
-    // Fallback to buildDemoEvents if no real events match visible month/year
-    return buildDemoEvents(calYear, calMonth)
+    return events
   }, [portalEvents, calYear, calMonth])
 
   const firstDow = new Date(calYear, calMonth, 1).getDay()
@@ -1025,38 +1138,10 @@ export function DesignCanvasHubPage() {
 
   // Combine real events as project cards with local card state
   const effectiveCards = useMemo(() => {
-    if (!portalEvents || portalEvents.length === 0) return cards
-
-    const realCards: ProjectCard[] = portalEvents.map((ev, i) => {
-      const d = new Date(ev.targetDate)
-      const dateStr = !isNaN(d.getTime())
-        ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-        : 'TBD'
-      const eventName = ev.title || 'Untitled Event'
-      const words = eventName.trim().split(/\s+/)
-      const alias = words.map((w: string) => w[0]).join('').slice(0, 4).toUpperCase() + '-26'
-      const thumbnails = [
-        '/images/decor/chateau-ballroom.png',
-        '/images/decor/garden-wedding.png',
-        '/images/decor/floral-arch.png',
-        '/images/decor/minimalist-table.png',
-      ]
-
-      return {
-        id: `pc-real-${ev.id}`,
-        title: `${eventName} — Layout Canvas`,
-        type: 'Design',
-        designer: 'Event Planner',
-        collaborators: [{ name: 'Executive Team', role: 'Viewer' }],
-        eventAlias: alias,
-        eventDate: dateStr,
-        lastEdited: 'Synced from API',
-        thumbnail: thumbnails[i % thumbnails.length],
-        starred: true,
-      }
-    })
-
-    return [...realCards, ...cards.filter((c) => !realCards.some((rc) => rc.id === c.id))]
+    const source = (portalEvents && portalEvents.length > 0) ? portalEvents : REAL_10_SEEDED_EVENTS
+    const realCards = mapPortalEventsToCards(source)
+    const userCards = cards.filter((c) => c.id.startsWith('mb-') || c.id.startsWith('pc-custom-'))
+    return [...realCards, ...userCards]
   }, [portalEvents, cards])
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -1191,57 +1276,38 @@ export function DesignCanvasHubPage() {
 
   // Events across upcoming months, sorted chronologically (soonest first)
   const upcomingEvents = useMemo(() => {
-    if (portalEvents && portalEvents.length > 0) {
-      const realUpcoming: CalendarEvent[] = portalEvents
-        .map((ev, index) => {
-          const d = new Date(ev.targetDate)
-          if (isNaN(d.getTime())) return null
-          const y = d.getFullYear()
-          const m = d.getMonth()
-          const day = d.getDate()
-          const eventName = ev.title || 'Untitled Event'
-          const words = eventName.trim().split(/\s+/)
-          const alias = words.map((w: string) => w[0]).join('').slice(0, 4).toUpperCase() + '-26'
-          const kinds: ShapeKind[] = ['actual', 'ingress', 'egress']
-          return {
-            id: `real-up-${ev.id}`,
-            day,
-            month: m,
-            year: y,
-            name: eventName,
-            alias,
-            status: 'Ready to Present' as DesignStatus,
-            kind: kinds[index % kinds.length],
-            colorIndex: index % EVENT_PALETTE.length,
-          }
-        })
-        .filter((e): e is CalendarEvent => e !== null)
-
-      if (realUpcoming.length > 0) {
-        return realUpcoming.sort((a, b) => {
-          if (a.year !== b.year) return a.year - b.year
-          if (a.month !== b.month) return a.month - b.month
-          return a.day - b.day
-        })
-      }
-    }
-
+    const source = (portalEvents && portalEvents.length > 0) ? portalEvents : REAL_10_SEEDED_EVENTS
     const all: CalendarEvent[] = []
-    for (let offset = 0; offset < 4; offset++) {
-      let m = calMonth + offset
-      let y = calYear
-      while (m > 11) {
-        m -= 12
-        y += 1
-      }
-      all.push(...buildDemoEvents(y, m))
-    }
+
+    source.forEach((ev, index) => {
+      const d = new Date(ev.targetDate)
+      if (isNaN(d.getTime())) return
+      const y = d.getFullYear()
+      const m = d.getMonth()
+      const day = d.getDate()
+      const eventName = ev.title || ev.name || 'Untitled Event'
+      const alias = makeEventAlias(eventName)
+      const statuses: DesignStatus[] = ['Final Draft', 'Ready to Present', 'Subject to Review', 'Initial Draft']
+
+      all.push({
+        id: `up-ev-${ev.id}`,
+        day,
+        month: m,
+        year: y,
+        name: eventName,
+        alias,
+        status: statuses[index % statuses.length],
+        kind: 'actual',
+        colorIndex: index % EVENT_PALETTE.length,
+      })
+    })
+
     return all.sort((a, b) => {
       if (a.year !== b.year) return a.year - b.year
       if (a.month !== b.month) return a.month - b.month
       return a.day - b.day
     })
-  }, [portalEvents, calYear, calMonth])
+  }, [portalEvents])
 
   const groupedUpcomingEvents = useMemo(() => {
     const filtered = statusFilter === 'All'
@@ -1281,10 +1347,7 @@ export function DesignCanvasHubPage() {
   }, [upcomingEvents, statusFilter])
 
   function handleOpenCalendarEvent(ev: CalendarEvent) {
-    // Calendar events and Recents cards are separate demo datasets; link them via the shared
-    // event alias (e.g. "SKD-26") so opening an upcoming item routes into the matching
-    // design project when one exists.
-    const matchingCard = DEMO_CARDS.find((c) => c.eventAlias === ev.alias)
+    const matchingCard = effectiveCards.find((c) => c.eventAlias === ev.alias || c.title.includes(ev.name))
     if (matchingCard) {
       handleOpenCard(matchingCard)
       return
