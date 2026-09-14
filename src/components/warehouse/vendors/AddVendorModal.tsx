@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { addVendor, type VendorStatus, type WarehouseVendor } from '@/lib/warehouse-vendors'
+import { createVendorApi } from '@/lib/vendorApi'
 
 const STATUSES: VendorStatus[] = ['Active', 'On Hold', 'Inactive']
 
@@ -33,7 +34,14 @@ export function AddVendorModal({ onClose, onCreated }: AddVendorModalProps) {
     'rounded-md border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-ring/30'
   const labelClass = 'text-[0.6rem] font-bold uppercase tracking-[0.1em] text-muted-foreground'
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    await createVendorApi({
+      name,
+      contactName,
+      email,
+      phone,
+      specialty: specialty || 'General supply',
+    })
     const vendor = addVendor({
       name,
       contactName,

@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Plus, Search } from 'lucide-react'
-import { updateVendor, useWarehouseVendors, type VendorStatus } from '@/lib/warehouse-vendors'
+import { updateVendor, useWarehouseVendors, type VendorStatus, type WarehouseVendor } from '@/lib/warehouse-vendors'
+import { fetchVendorsApi } from '@/lib/vendorApi'
 import { Pill } from '@/components/warehouse/shared/Pill'
 import { VENDOR_STATUS_TONE } from '@/components/warehouse/replenishment/tone'
 import { VendorDetailModal } from '@/components/warehouse/vendors/VendorDetailModal'
@@ -10,11 +11,39 @@ import { cn } from '@/lib/utils'
 const STATUS_FILTERS: Array<VendorStatus | 'All'> = ['All', 'Active', 'On Hold', 'Inactive']
 
 export function VendorManagementModule() {
-  const vendors = useWarehouseVendors()
+  const initialVendors = useWarehouseVendors()
+  const [vendors, setVendors] = useState<WarehouseVendor[]>(initialVendors)
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<VendorStatus | 'All'>('All')
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null)
   const [addOpen, setAddOpen] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    fetchVendorsApi().then((apiVendors) => {
+      if (!active || !apiVendors.length) return
+      const mapped: WarehouseVendor[] = apiVendors.map((v) => ({
+        id: v.vendorId,
+        name: v.name,
+        contactName: v.contactName || 'Primary Contact',
+        email: v.email || 'vendor@lumiere.com',
+        phone: v.phone || '+1 555-0192',
+        specialty: v.specialty || 'General Supplier',
+        leadTimeHours: 24,
+        status: (v.status as VendorStatus) || 'Active',
+        performanceNotes: 'Registered via API.',
+        orderHistory: [],
+      }))
+      setVendors((prev) => {
+        const ids = new Set(prev.map((item) => item.id))
+        const newVendors = mapped.filter((item) => !ids.has(item.id))
+        return [...newVendors, ...prev]
+      })
+    })
+    return () => {
+      active = false
+    }
+  }, [])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
