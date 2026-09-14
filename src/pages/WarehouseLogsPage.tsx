@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Search, Download, ChevronDown } from 'lucide-react'
 import { ConsoleLayout } from '@/components/ConsoleLayout'
+import { usePortal } from '@/lib/store'
 
 interface WarehouseLog {
   id: string
@@ -14,90 +15,98 @@ interface WarehouseLog {
   notes: string
 }
 
-const LOGS: WarehouseLog[] = [
-  {
-    id: 'w-1',
-    timestamp: 'Jun 07 2026 · 08:45 AM',
-    logId: 'LOG-88102',
-    assetId: 'AST-LGT-001',
-    assetName: 'Modular Aluminium Truss 3m',
-    transaction: 'Egress Checkout',
-    qty: '12',
-    handledBy: 'Marcus Vance',
-    notes: 'Checked out for Grand Ballroom Gala 2026.',
-  },
-  {
-    id: 'w-2',
-    timestamp: 'Jun 07 2026 · 08:12 AM',
-    logId: 'LOG-88099',
-    assetId: 'AST-AUD-109',
-    assetName: 'Wireless Receiver Rack System 4-Ch',
-    transaction: 'Ingress Checkin',
-    qty: '2',
-    handledBy: 'Gabriel Santos',
-    notes: 'Returned from Sunset Bay Wedding with zero damage.',
-  },
-  {
-    id: 'w-3',
-    timestamp: 'Jun 06 2026 · 05:30 PM',
-    logId: 'LOG-88085',
-    assetId: 'AST-DRP-044',
-    assetName: 'Silk Sheer Swag Fabric Champagne 10m',
-    transaction: 'Damage Flagged',
-    qty: '3',
-    handledBy: 'David Kim',
-    notes: 'Tear detected on hemline; routed for seamstress repair.',
-  },
-  {
-    id: 'w-4',
-    timestamp: 'Jun 06 2026 · 02:15 PM',
-    logId: 'LOG-88072',
-    assetId: 'AST-STG-201',
-    assetName: 'Heavy Baseplate Steel 800mm x 800mm',
-    transaction: 'Restock Intake',
-    qty: '10',
-    handledBy: 'Maria Hernandez',
-    notes: 'New inventory intake received from primary vendor.',
-  },
-  {
-    id: 'w-5',
-    timestamp: 'Jun 05 2026 · 11:20 AM',
-    logId: 'LOG-88050',
-    assetId: 'AST-LGT-005',
-    assetName: 'High-Lumen Moving Head Spot 500W',
-    transaction: 'Egress Checkout',
-    qty: '16',
-    handledBy: 'Elena Rostova',
-    notes: 'Staged and dispatched for Fashion Week Runway.',
-  },
-]
-
 export function WarehouseLogsPage() {
+  const { events } = usePortal()
   const [query, setQuery] = useState('')
   const [txnType, setTxnType] = useState('All')
   const [sortOrder, setSortOrder] = useState('Newest First')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
 
+  const logs = useMemo<WarehouseLog[]>(() => {
+    const e0 = events[0]?.title || 'Solstice Motors Electric SUV Reveal'
+    const e1 = events[1]?.title || 'Aura Luxe Autumn Gala 2026'
+    const e4 = events[4]?.title || 'Haute Couture Resort Collection Showcase'
+
+    return [
+      {
+        id: 'w-1',
+        timestamp: 'Sep 16 2026 · 08:45 AM',
+        logId: 'LOG-88102',
+        assetId: 'AST-LGT-001',
+        assetName: 'Modular Aluminium Truss 3m',
+        transaction: 'Egress Checkout',
+        qty: '12',
+        handledBy: 'Marcus Vance',
+        notes: `Checked out for ${e0}.`,
+      },
+      {
+        id: 'w-2',
+        timestamp: 'Sep 20 2026 · 08:12 AM',
+        logId: 'LOG-88099',
+        assetId: 'AST-AUD-109',
+        assetName: 'Wireless Receiver Rack System 4-Ch',
+        transaction: 'Ingress Checkin',
+        qty: '2',
+        handledBy: 'Gabriel Santos',
+        notes: `Returned from ${e1} with zero damage.`,
+      },
+      {
+        id: 'w-3',
+        timestamp: 'Sep 24 2026 · 05:30 PM',
+        logId: 'LOG-88085',
+        assetId: 'AST-DRP-044',
+        assetName: 'Silk Sheer Swag Fabric Champagne 10m',
+        transaction: 'Damage Flagged',
+        qty: '3',
+        handledBy: 'David Kim',
+        notes: 'Tear detected on hemline; routed for seamstress repair.',
+      },
+      {
+        id: 'w-4',
+        timestamp: 'Sep 28 2026 · 02:15 PM',
+        logId: 'LOG-88072',
+        assetId: 'AST-STG-201',
+        assetName: 'Heavy Baseplate Steel 800mm x 800mm',
+        transaction: 'Restock Intake',
+        qty: '10',
+        handledBy: 'Maria Hernandez',
+        notes: 'New inventory intake received from primary vendor.',
+      },
+      {
+        id: 'w-5',
+        timestamp: 'Oct 03 2026 · 11:20 AM',
+        logId: 'LOG-88050',
+        assetId: 'AST-LGT-005',
+        assetName: 'High-Lumen Moving Head Spot 500W',
+        transaction: 'Egress Checkout',
+        qty: '16',
+        handledBy: 'Elena Rostova',
+        notes: `Staged and dispatched for ${e4}.`,
+      },
+    ]
+  }, [events])
+
   const txnTypes = useMemo(
-    () => ['All', ...Array.from(new Set(LOGS.map((l) => l.transaction)))],
-    [],
+    () => ['All', ...Array.from(new Set(logs.map((l) => l.transaction)))],
+    [logs],
   )
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    const base = LOGS.filter((l) => {
+    const base = logs.filter((l) => {
       const matchesType = txnType === 'All' || l.transaction === txnType
       const matchesQuery =
         !q ||
         l.assetName.toLowerCase().includes(q) ||
         l.assetId.toLowerCase().includes(q) ||
         l.logId.toLowerCase().includes(q) ||
-        l.handledBy.toLowerCase().includes(q)
+        l.handledBy.toLowerCase().includes(q) ||
+        l.notes.toLowerCase().includes(q)
       return matchesType && matchesQuery
     })
     return sortOrder === 'Newest First' ? base : [...base].reverse()
-  }, [query, txnType, sortOrder])
+  }, [query, txnType, sortOrder, logs])
 
   const exportCsv = () => {
     let exportRows = filtered

@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Search, ClipboardCheck, MapPin, Calendar, Briefcase } from 'lucide-react'
 import { ConsoleLayout } from '@/components/ConsoleLayout'
 import { VerifyHandoffModal } from '@/components/VerifyHandoffModal'
 import { ManifestDetailModal } from '@/components/ManifestDetailModal'
 import { cn } from '@/lib/utils'
+import { usePortal } from '@/lib/store'
 
 type HandshakeStatus = 'Pending Verification' | 'In Transit' | 'Completed'
 
@@ -20,69 +21,6 @@ interface Manifest {
   status: HandshakeStatus
 }
 
-const MANIFESTS: Manifest[] = [
-  {
-    id: 'm-1',
-    manifestId: 'MNF-9940',
-    vehicle: 'Truck Alpha (6-Ton)',
-    event: 'Spring Gala 2026',
-    venue: 'The Peninsula Manila',
-    date: '28 May 2026',
-    fieldTask: 'Scenic Backdrop & Floral Arch Setup',
-    logisticsHandoff: 'M. Kowalski',
-    fieldReceiver: 'Eleanor Vance',
-    status: 'Pending Verification',
-  },
-  {
-    id: 'm-2',
-    manifestId: 'MNF-9941',
-    vehicle: 'Van Beta (Transit)',
-    event: 'Fashion Week Gala',
-    venue: 'Chateau Grand Ballroom',
-    date: '28 May 2026',
-    fieldTask: 'Logistics & Fleet Coordination',
-    logisticsHandoff: 'J. Santos',
-    fieldReceiver: 'Sebastian Cross',
-    status: 'In Transit',
-  },
-  {
-    id: 'm-3',
-    manifestId: 'MNF-9938',
-    vehicle: 'Truck Gamma (4-Ton)',
-    event: 'Private Exhibit',
-    venue: 'Shangri-La Horizon Room',
-    date: '30 May 2026',
-    fieldTask: 'Lighting Rig Setup & Calibration',
-    logisticsHandoff: 'M. Kowalski',
-    fieldReceiver: 'Marcus Sterling',
-    status: 'Completed',
-  },
-  {
-    id: 'm-4',
-    manifestId: 'MNF-9942',
-    vehicle: 'Van Delta (Transit)',
-    event: 'Golden Anniversary Soirée',
-    venue: 'Raffles Makati Grand Salon',
-    date: '01 Jun 2026',
-    fieldTask: 'Tablescape & Candle Ambiance Setup',
-    logisticsHandoff: 'R. Nakamura',
-    fieldReceiver: 'J. Moreau',
-    status: 'Pending Verification',
-  },
-  {
-    id: 'm-5',
-    manifestId: 'MNF-9943',
-    vehicle: 'Truck Echo (6-Ton)',
-    event: 'Corporate Gala Night',
-    venue: 'Solaire Resort Grand Ballroom',
-    date: '02 Jun 2026',
-    fieldTask: 'AV Staging & Backdrop Assembly',
-    logisticsHandoff: 'S. Chen',
-    fieldReceiver: 'Eleanor Vance',
-    status: 'Pending Verification',
-  },
-]
-
 const STATUS_META: Record<HandshakeStatus, { badge: string; dot: string }> = {
   'Pending Verification': { badge: 'bg-amber-100 text-amber-800', dot: 'bg-amber-500' },
   'In Transit':           { badge: 'bg-sky-100 text-sky-800',    dot: 'bg-sky-500'   },
@@ -93,13 +31,6 @@ type Filter = 'All Active' | HandshakeStatus
 
 const FILTERS: Filter[] = ['All Active', 'Pending Verification', 'In Transit', 'Completed']
 
-const KPIS = [
-  { label: 'Awaiting Handshake',   value: '3',  sub: 'Manifests arrived at venue loading bays',   accent: 'text-foreground'    },
-  { label: 'In Transit Custody',   value: '9',  sub: 'En route to event destinations',            accent: 'text-foreground'    },
-  { label: 'Verified Today',       value: '14', sub: 'Successful digital handshakes completed',   accent: 'text-foreground'    },
-  { label: 'Discrepancy Alerts',   value: '0',  sub: 'All quantities perfectly reconciled',       accent: 'text-emerald-700'   },
-]
-
 function actionsFor(status: HandshakeStatus): [string, string] {
   switch (status) {
     case 'Pending Verification': return ['Review & Sign', '']
@@ -109,9 +40,67 @@ function actionsFor(status: HandshakeStatus): [string, string] {
 }
 
 export function DispatchManifestPage() {
+  const { events: portalEvents } = usePortal()
   const [query,        setQuery]        = useState('')
   const [filter,       setFilter]       = useState<Filter>('All Active')
-  const [manifests,    setManifests]    = useState<Manifest[]>(MANIFESTS)
+
+  const defaultManifests = useMemo<Manifest[]>(() => {
+    if (!portalEvents || portalEvents.length === 0) return []
+
+    const vehicles = ['Truck Alpha (6-Ton)', 'Van Beta (Transit)', 'Truck Gamma (4-Ton)', 'Van Delta (Transit)', 'Truck Echo (6-Ton)']
+    const tasks = [
+      'Scenic Backdrop & Floral Arch Setup',
+      'Logistics & Fleet Coordination',
+      'Lighting Rig Setup & Calibration',
+      'Tablescape & Candle Ambiance Setup',
+      'AV Staging & Backdrop Assembly',
+    ]
+    const handoffs = ['M. Kowalski', 'J. Santos', 'R. Nakamura', 'S. Chen']
+    const receivers = ['Eleanor Vance', 'Sebastian Cross', 'Marcus Sterling', 'J. Moreau']
+    const statuses: HandshakeStatus[] = ['Pending Verification', 'In Transit', 'Completed']
+
+    return portalEvents.map((evt, idx) => {
+      const dateObj = new Date(`${evt.targetDate}T12:00:00`)
+      const formattedDate = !isNaN(dateObj.getTime())
+        ? dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+        : evt.targetDate
+
+      return {
+        id: `m-${evt.id || idx + 1}`,
+        manifestId: `MNF-${9940 + idx}`,
+        vehicle: vehicles[idx % vehicles.length],
+        event: evt.title,
+        venue: evt.venue,
+        date: formattedDate,
+        fieldTask: tasks[idx % tasks.length],
+        logisticsHandoff: handoffs[idx % handoffs.length],
+        fieldReceiver: receivers[idx % receivers.length],
+        status: (evt.status as any) === 'Completed' ? 'Completed' : statuses[idx % statuses.length],
+      }
+    })
+  }, [portalEvents])
+
+  const [manifests, setManifests] = useState<Manifest[]>([])
+
+  useEffect(() => {
+    if (defaultManifests.length > 0) {
+      setManifests(defaultManifests)
+    }
+  }, [defaultManifests])
+
+  const kpis = useMemo(() => {
+    const awaiting = manifests.filter((m) => m.status === 'Pending Verification').length
+    const inTransit = manifests.filter((m) => m.status === 'In Transit').length
+    const verified = manifests.filter((m) => m.status === 'Completed').length
+
+    return [
+      { label: 'Awaiting Handshake', value: String(awaiting), sub: 'Manifests arrived at venue loading bays', accent: 'text-foreground' },
+      { label: 'In Transit Custody', value: String(inTransit), sub: 'En route to event destinations', accent: 'text-foreground' },
+      { label: 'Verified Today', value: String(verified), sub: 'Successful digital handshakes completed', accent: 'text-foreground' },
+      { label: 'Discrepancy Alerts', value: '0', sub: 'All quantities perfectly reconciled', accent: 'text-emerald-700' },
+    ]
+  }, [manifests])
+
   const [verifyOpen,   setVerifyOpen]   = useState(false)
   const [preselectedId,setPreselectedId]= useState<string | null>(null)
   const [detailFor,    setDetailFor]    = useState<Manifest | null>(null)
@@ -187,7 +176,7 @@ export function DispatchManifestPage() {
 
       {/* KPIs */}
       <div className="mt-7 grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
-        {KPIS.map((k) => (
+        {kpis.map((k) => (
           <div key={k.label} className="bg-card p-5 sm:p-6">
             <p className="text-[0.58rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               {k.label}

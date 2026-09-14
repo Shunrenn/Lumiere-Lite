@@ -5,7 +5,8 @@ import { DeployTaskForceModal } from '@/components/DeployTaskForceModal'
 import { DeploymentDetailModal } from '@/components/DeploymentDetailModal'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { cn } from '@/lib/utils'
-import { addDeployment, seedDeployments, updateDeployment, useDeployments } from '@/lib/deployments'
+import { addDeployment, updateDeployment, useDeployments } from '@/lib/deployments'
+import { usePortal } from '@/lib/store'
 
 type DeployStatus = 'In Progress' | 'Awaiting Setup' | 'Completed'
 
@@ -24,67 +25,6 @@ interface Deployment {
   vehicle: string
 }
 
-const DEPLOYMENTS: Deployment[] = [
-  {
-    id: 'd-1',
-    date: '28 May 2026',
-    time: '08:00 AM',
-    deploymentId: 'LMR-DEP-V0941',
-    event: 'Spring Gala 2026',
-    venue: 'The Peninsula Manila',
-    task: 'Scenic Backdrop Installation & Setup',
-    status: 'In Progress',
-    progress: 65,
-    crewLeads: ['Eleanor Vance'],
-    staffMembers: ['J. Moreau', 'R. Nakamura'],
-    vehicle: 'Truck Alpha (6-Ton)',
-  },
-  {
-    id: 'd-2',
-    date: '28 May 2026',
-    time: '11:30 AM',
-    deploymentId: 'LMR-DEP-V0942',
-    event: 'Fashion Week Gala',
-    venue: 'Chateau Grand Ballroom',
-    task: 'Logistics & Fleet Coordination, Décor Assembly',
-    status: 'Awaiting Setup',
-    progress: 0,
-    crewLeads: ['Sebastian Cross'],
-    staffMembers: ['S. Chen'],
-    vehicle: 'Van Beta (Transit)',
-  },
-  {
-    id: 'd-3',
-    date: '27 May 2026',
-    time: '03:15 PM',
-    deploymentId: 'LMR-DEP-V0943',
-    event: 'Private Exhibit',
-    venue: 'Shangri-La Horizon Room',
-    task: 'Lighting Rig Setup & Calibration, Fine Trim',
-    status: 'Completed',
-    progress: 100,
-    crewLeads: ['Marcus Sterling'],
-    staffMembers: ['J. Moreau'],
-    vehicle: 'Truck Alpha (6-Ton)',
-  },
-  {
-    id: 'd-4',
-    date: '26 May 2026',
-    time: '09:45 AM',
-    deploymentId: 'LMR-DEP-V0944',
-    event: 'Aurelio Wedding',
-    venue: 'Ritz-Carlton Residency',
-    task: 'Inventory Dispatch Oversight, Reception Setup',
-    status: 'In Progress',
-    progress: 42,
-    crewLeads: ['Isolde Thorne'],
-    staffMembers: ['R. Nakamura', 'S. Chen'],
-    vehicle: 'None — External Courier',
-  },
-]
-
-seedDeployments(DEPLOYMENTS)
-
 const statusMeta: Record<DeployStatus, { badge: string; dot: string; bar: string; text: string }> = {
   'In Progress': { badge: 'bg-amber-100 text-amber-800', dot: 'bg-amber-500', bar: 'bg-amber-500', text: 'text-amber-700' },
   'Awaiting Setup': { badge: 'bg-muted text-muted-foreground', dot: 'bg-muted-foreground', bar: 'bg-muted-foreground/40', text: 'text-muted-foreground' },
@@ -95,23 +35,68 @@ type Filter = 'All Statuses' | DeployStatus
 
 const FILTERS: Filter[] = ['All Statuses', 'In Progress', 'Awaiting Setup', 'Completed']
 
-interface Kpi {
-  label: string
-  value: string
-  sub: string
-}
-
-const KPIS: Kpi[] = [
-  { label: 'Active Live Venues', value: '18', sub: 'On-site installation projects' },
-  { label: 'Pending Setups', value: '7', sub: 'Awaiting site clearance' },
-  { label: 'Fleet En Route', value: '9', sub: 'Active logistics transit' },
-  { label: 'Completion Index', value: '84%', sub: 'All milestones met on target' },
-]
-
 export function TaskDeploymentsPage() {
+  const { events: portalEvents } = usePortal()
+  const customDeployments = useDeployments()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<Filter>('All Statuses')
-  const deployments = useDeployments()
+
+  const deployments = useMemo<Deployment[]>(() => {
+    if (!portalEvents || portalEvents.length === 0) return customDeployments
+
+    const mapped: Deployment[] = portalEvents.map((evt, idx) => {
+      const dateObj = new Date(`${evt.targetDate}T12:00:00`)
+      const formattedDate = !isNaN(dateObj.getTime())
+        ? dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+        : evt.targetDate
+
+      const statuses: DeployStatus[] = ['In Progress', 'Awaiting Setup', 'Completed']
+      const status: DeployStatus = (evt.status as any) === 'Completed' ? 'Completed' : statuses[idx % 3]
+      const tasks = [
+        'Scenic Backdrop Installation & Setup',
+        'Logistics & Fleet Coordination, Décor Assembly',
+        'Lighting Rig Setup & Calibration, Fine Trim',
+        'Inventory Dispatch Oversight, Reception Setup',
+        'AV Staging & Backdrop Assembly',
+      ]
+      const leads = [['Eleanor Vance'], ['Sebastian Cross'], ['Marcus Sterling'], ['Isolde Thorne']]
+      const staff = [['J. Moreau', 'R. Nakamura'], ['S. Chen'], ['J. Moreau'], ['R. Nakamura', 'S. Chen']]
+      const vehicles = ['Truck Alpha (6-Ton)', 'Van Beta (Transit)', 'Truck Gamma (4-Ton)', 'Van Delta (Transit)', 'Truck Echo (6-Ton)']
+
+      return {
+        id: evt.id || `d-${idx + 1}`,
+        date: formattedDate,
+        time: idx % 2 === 0 ? '08:00 AM' : '11:30 AM',
+        deploymentId: `LMR-DEP-${evt.refId ? evt.refId.replace('PRT-2026-', '') : String(941 + idx)}`,
+        event: evt.title,
+        venue: evt.venue,
+        task: tasks[idx % tasks.length],
+        status,
+        progress: status === 'Completed' ? 100 : status === 'In Progress' ? 45 + ((idx * 17) % 45) : 0,
+        crewLeads: leads[idx % leads.length],
+        staffMembers: staff[idx % staff.length],
+        vehicle: vehicles[idx % vehicles.length],
+      }
+    })
+
+    const customOnly = customDeployments.filter((c) => !mapped.some((m) => m.id === c.id || m.deploymentId === c.deploymentId))
+    return [...mapped, ...customOnly]
+  }, [portalEvents, customDeployments])
+
+  const kpiData = useMemo(() => {
+    const activeVenues = new Set(deployments.map((d) => d.venue)).size
+    const pendingCount = deployments.filter((d) => d.status === 'Awaiting Setup').length
+    const inProgressCount = deployments.filter((d) => d.status === 'In Progress').length
+    const totalProgress = deployments.reduce((acc, d) => acc + d.progress, 0)
+    const avgProgress = deployments.length > 0 ? Math.round(totalProgress / deployments.length) : 0
+
+    return [
+      { label: 'Active Live Venues', value: String(activeVenues), sub: 'On-site installation projects' },
+      { label: 'Pending Setups', value: String(pendingCount), sub: 'Awaiting site clearance' },
+      { label: 'Fleet En Route', value: String(inProgressCount), sub: 'Active logistics transit' },
+      { label: 'Completion Index', value: `${avgProgress}%`, sub: 'All milestones met on target' },
+    ]
+  }, [deployments])
   const [deployOpen, setDeployOpen] = useState(false)
   const [selectedDeployment, setSelectedDeployment] = useState<Deployment | null>(null)
   const [reassignTarget, setReassignTarget] = useState<Deployment | null>(null)
@@ -187,7 +172,7 @@ export function TaskDeploymentsPage() {
 
       {/* KPIs */}
       <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {KPIS.map((k) => (
+        {kpiData.map((k) => (
           <div key={k.label} className="rounded-xl border border-border bg-card p-5 sm:p-6">
             <p className="text-[0.58rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               {k.label}

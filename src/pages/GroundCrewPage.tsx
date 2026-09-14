@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { AlertTriangle, Bell, CalendarDays, Camera, Check, ChevronLeft, ChevronRight, ClipboardList, FileText, Lock, MapPin, MessageSquare, PackageCheck, Send, ShieldCheck, UserCircle2, X, Wifi, WifiOff, RefreshCw } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
@@ -22,38 +22,31 @@ interface CrewRequest { id: string; type: string; date: string; note: string; st
 interface CallSheetEntry { eventId: string; arrival: string; setup: string; standby: string }
 
 // Event phase is driven by warehouse confirmation, not by the ground crew —
-// Founders Dinner already cleared egress this morning, so it opens on the
+// Solstice Motors Reveal already cleared egress, so it opens on the
 // active "On Venue" reporting checkpoint.
-const EVENTS: EventItem[] = [
-  { id: 'e-1', name: 'La Nuit Dorée — Spring Gala 2026', date: '2026-08-20', venue: 'The Peninsula Manila', status: 'Current', editable: true, phase: 'On Venue', items: [{ id: 'i1', name: 'Premium Crystal Candelabra', sku: 'LM-0012', qty: 24, color: 'Clear / Gold' }, { id: 'i2', name: 'Gold Chiavari Chairs', sku: 'LM-0048', qty: 200, color: 'Antique Gold' }, { id: 'i3', name: 'Velvet Drapery Panels', sku: 'LM-0211', qty: 40, color: 'Midnight Blue' }] },
-  { id: 'e-2', name: 'Grand Ballroom Wedding', date: '2026-08-27', venue: 'BGC Arts Center', status: 'Upcoming', editable: false, phase: 'Egress', items: [{ id: 'i4', name: 'Round Banquet Tables', sku: 'LM-0103', qty: 25, color: 'Walnut' }, { id: 'i5', name: 'Brass Plinths', sku: 'LM-0304', qty: 12, color: 'Brushed Brass' }] },
-  { id: 'e-3', name: 'Louvre Gala Event', date: '2026-09-05', venue: 'Shangri-La Fort', status: 'Upcoming', editable: false, phase: 'Egress', items: [{ id: 'i6', name: 'Linen Lounge Sofas', sku: 'LM-0411', qty: 18, color: 'Natural Linen' }, { id: 'i7', name: 'Frosted Glass Chargers', sku: 'LM-0520', qty: 180, color: 'Frosted White' }] },
-]
-
 const SCHEDULE = [
-  { date: '2026-08-20', time: '05:30', title: 'Warehouse muster & loading', venue: 'Lumière Depot' },
-  { date: '2026-08-20', time: '09:00', title: 'Venue arrival and unload', venue: 'The Peninsula Manila' },
-  { date: '2026-08-20', time: '10:00', title: 'Setup window', venue: 'Grand Ballroom' },
-  { date: '2026-08-27', time: '08:00', title: 'Maison Privée load-in', venue: 'BGC Arts Center' },
-  { date: '2026-08-27', time: '13:00', title: 'Crew briefing', venue: 'BGC Arts Center' },
-  { date: '2026-08-30', time: '14:00', title: 'Safety meeting', venue: 'Lumière Depot' },
+  { date: '2026-09-16', time: '05:30', title: 'Warehouse muster & loading', venue: 'Lumière Depot' },
+  { date: '2026-09-16', time: '09:00', title: 'Venue arrival and unload', venue: 'The Peninsula Manila' },
+  { date: '2026-09-16', time: '10:00', title: 'Setup window', venue: 'Grand Ballroom' },
+  { date: '2026-09-20', time: '08:00', title: 'Aura Luxe load-in', venue: 'The Peninsula Manila' },
+  { date: '2026-09-20', time: '13:00', title: 'Crew briefing', venue: 'The Peninsula Manila' },
+  { date: '2026-09-24', time: '14:00', title: 'Safety meeting', venue: 'Shangri-La Fort' },
 ]
 
-// Call sheets now live on the Calendar, keyed to the event's date.
-  const CALL_SHEETS: CallSheetEntry[] = [
+const CALL_SHEETS: CallSheetEntry[] = [
   { eventId: 'e-1', arrival: '09:00', setup: '10:00', standby: '17:00' },
   { eventId: 'e-2', arrival: '08:00', setup: '09:30', standby: '16:00' },
   { eventId: 'e-3', arrival: '15:00', setup: '16:30', standby: '22:00' },
-  ]
+]
 
 const NOTIFICATIONS = [
-  { id: 'n1', label: 'Meeting', detail: 'Safety meeting · Aug 30, 14:00' },
-  { id: 'n2', label: 'Assignment', detail: 'You are assigned to the Founders Dinner setup.' },
+  { id: 'n1', label: 'Meeting', detail: 'Safety meeting · Sep 24, 14:00' },
+  { id: 'n2', label: 'Assignment', detail: 'You are assigned to Solstice Motors Electric SUV Reveal setup.' },
   { id: 'n3', label: 'Reminder', detail: 'Bring radio handset and safety vest.' },
 ]
 
-const SEED_REPORTS: DamageReport[] = [{ id: 'r1', event: 'Founders Dinner', item: 'Gold Chiavari Chairs', phase: 'On Venue', quantity: 2, description: 'Light scratches on back rail', photo: '', capturedAt: 'Aug 20, 2026 · 09:42', location: 'The Peninsula Manila' }]
-const SEED_REQUESTS: CrewRequest[] = [{ id: 'q1', type: 'Personal leave', date: '2026-08-30', note: 'Family commitment', status: 'Approved' }, { id: 'q2', type: 'Schedule request', date: '2026-09-02', note: 'Request earlier call time', status: 'Pending' }]
+const SEED_REPORTS: DamageReport[] = [{ id: 'r1', event: 'Solstice Motors Electric SUV Reveal', item: 'Gold Chiavari Chairs', phase: 'On Venue', quantity: 2, description: 'Light scratches on back rail', photo: '', capturedAt: 'Sep 16, 2026 · 09:42', location: 'The Peninsula Manila' }]
+const SEED_REQUESTS: CrewRequest[] = [{ id: 'q1', type: 'Personal leave', date: '2026-09-22', note: 'Family commitment', status: 'Approved' }, { id: 'q2', type: 'Schedule request', date: '2026-09-28', note: 'Request earlier call time', status: 'Pending' }]
 
 function dateLabel(date: string) { return new Date(`${date}T12:00:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) }
 
@@ -75,8 +68,35 @@ export function GroundCrewPage() {
         ? 'Team Lead / Field Lead'
         : 'Ground Crew / Member'
 
-  const [adminEventId, setAdminEventId] = useState('e-1')
-  const [crewEvents, setCrewEvents] = useState<EventItem[]>(EVENTS)
+  const derivedEvents = useMemo<EventItem[]>(() => {
+    if (!events || events.length === 0) return []
+    return events.map((evt, idx) => ({
+      id: evt.id || `e-${idx + 1}`,
+      name: evt.title,
+      date: evt.targetDate,
+      venue: evt.venue,
+      status: idx === 0 ? 'Current' : 'Upcoming',
+      editable: idx === 0,
+      phase: idx === 0 ? 'On Venue' : 'Egress',
+      items: [
+        { id: `i-${idx}-1`, name: 'Premium Crystal Candelabra', sku: 'LM-0012', qty: 24, color: 'Clear / Gold' },
+        { id: `i-${idx}-2`, name: 'Gold Chiavari Chairs', sku: 'LM-0048', qty: 200, color: 'Antique Gold' },
+        { id: `i-${idx}-3`, name: 'Velvet Drapery Panels', sku: 'LM-0211', qty: 40, color: 'Midnight Blue' },
+      ],
+    }))
+  }, [events])
+
+  const [adminEventId, setAdminEventId] = useState('')
+  const [crewEvents, setCrewEvents] = useState<EventItem[]>([])
+
+  useEffect(() => {
+    if (derivedEvents.length > 0) {
+      setCrewEvents(derivedEvents)
+      if (!adminEventId) {
+        setAdminEventId(derivedEvents[0].id)
+      }
+    }
+  }, [derivedEvents])
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const selectedEvent = selectedEventId ? crewEvents.find((event) => event.id === selectedEventId) ?? null : null
   const [reports, setReports] = useState(SEED_REPORTS)
