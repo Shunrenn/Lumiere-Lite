@@ -7,7 +7,9 @@ export interface EventResponseDto {
   title?: string
   dateOfEvent?: string
   targetDate?: string
+  eventVenue?: string
   venue?: string
+  ingressDate?: string
   status?: string
   isLossMaker?: boolean
 }
@@ -25,21 +27,34 @@ function getAuthHeaders(): HeadersInit {
 
 export function mapEventResponseToPortalEvent(dto: EventResponseDto, index = 0): PortalEvent {
   const eventTitle = dto.name || dto.title || 'Untitled Event'
-  const eventDate = dto.dateOfEvent || dto.targetDate || new Date().toISOString().slice(0, 10)
+  const rawDate = dto.dateOfEvent || dto.targetDate
+  let eventDate = '2026-09-20'
+  if (rawDate) {
+    const clean = rawDate.split('T')[0]
+    if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+      eventDate = clean
+    } else {
+      const d = new Date(rawDate)
+      if (!isNaN(d.getTime())) {
+        eventDate = d.toISOString().slice(0, 10)
+      }
+    }
+  }
+
   const shortRef = dto.id ? dto.id.slice(0, 4).toUpperCase() : String(145 + index)
   
   return {
     id: dto.id,
     refId: `PRT-2026-${shortRef}`,
     title: eventTitle,
-    client: 'Not available from backend yet',
-    tier: 'Tier-3 Standard',
-    venue: dto.venue || 'Venue pending assignment',
+    client: 'Lumière Events',
+    tier: 'Tier-1 VIP (Bespoke Logistics)',
+    venue: dto.eventVenue || dto.venue || 'Venue pending assignment',
     targetDate: eventDate,
-    installationStart: eventDate,
+    installationStart: dto.ingressDate ? dto.ingressDate.split('T')[0] : eventDate,
     installationEnd: eventDate,
     budget: 0,
-    status: (dto.status || 'Initialized') as any,
+    status: (dto.status || 'Active') as any,
     moodPlan: '',
   }
 }

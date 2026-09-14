@@ -80,148 +80,164 @@ interface CalendarEvent {
   colorIndex: number
 }
 
+// Fallback seed events matching backend DbInitializer.cs exactly (used if API connection is offline/loading)
 const REAL_10_SEEDED_EVENTS: any[] = [
   {
-    id: 'e-101',
-    refId: 'PRT-2026-0145',
+    id: '10000000-0000-0000-0000-000000000001',
+    refId: 'PRT-2026-1000',
     title: 'Aura Luxe Autumn Gala 2026',
     client: 'Lumière Executive Board',
     tier: 'Tier-1 VIP (Bespoke Logistics)',
-    venue: 'Grand Palais Conservatory, Paris',
-    targetDate: '2026-09-18',
-    installationStart: '1:00 PM',
-    installationEnd: '8:00 PM',
+    venue: 'The Grand Ballroom, Shangri-La Fort',
+    targetDate: '2026-09-20',
+    installationStart: '2026-09-19',
+    installationEnd: '2026-09-20',
     budget: 3400000,
-    status: 'In Production',
+    status: 'Active',
     moodPlan: 'Crystal sconces and emerald velvet draping.',
   },
   {
-    id: 'e-102',
-    refId: 'PRT-2026-0146',
+    id: '10000000-0000-0000-0000-000000000002',
+    refId: 'PRT-2026-1000',
     title: 'Vanguard Tech Keynote & Product Launch',
     client: 'Vanguard Dynamics',
     tier: 'Tier-2 Premium',
-    venue: 'Station F Main Auditorium, Paris',
-    targetDate: '2026-09-24',
-    installationStart: '2:00 PM',
-    installationEnd: '9:00 PM',
+    venue: 'SMX Convention Center Hall 3, Pasay',
+    targetDate: '2026-09-28',
+    installationStart: '2026-09-27',
+    installationEnd: '2026-09-28',
     budget: 1950000,
-    status: 'In Production',
+    status: 'Active',
     moodPlan: 'Modern minimalist LED panels and obsidian podiums.',
   },
   {
-    id: 'e-103',
-    refId: 'PRT-2026-0147',
+    id: '10000000-0000-0000-0000-000000000003',
+    refId: 'PRT-2026-1000',
     title: 'Celestial Horizon Presidential Wedding',
     client: 'Celestial Trust',
     tier: 'Tier-1 VIP (Bespoke Logistics)',
-    venue: 'Château de Versailles Orangery',
-    targetDate: '2026-10-03',
-    installationStart: '10:00 AM',
-    installationEnd: '5:00 PM',
+    venue: 'Solaire Resort Grand Pavilion, Parañaque',
+    targetDate: '2026-10-08',
+    installationStart: '2026-10-07',
+    installationEnd: '2026-10-08',
     budget: 5200000,
-    status: 'In Production',
+    status: 'Active',
     moodPlan: 'White silk canopy, gold candelabras, floral arbors.',
   },
   {
-    id: 'e-104',
-    refId: 'PRT-2026-0148',
+    id: '10000000-0000-0000-0000-000000000004',
+    refId: 'PRT-2026-1000',
     title: 'Solstice Motors Electric SUV Reveal',
     client: 'Solstice Motors',
     tier: 'Tier-2 Premium',
-    venue: 'Paris Expo Porte de Versailles',
-    targetDate: '2026-10-10',
-    installationStart: '3:00 PM',
-    installationEnd: '10:00 PM',
+    venue: 'Okada Manila Glass Dome Auditorium',
+    targetDate: '2026-09-16',
+    installationStart: '2026-09-15',
+    installationEnd: '2026-09-16',
     budget: 2800000,
-    status: 'Initialized',
+    status: 'Active',
     moodPlan: 'Sleek brushed aluminum stages and laser lighting.',
   },
   {
-    id: 'e-105',
-    refId: 'PRT-2026-0149',
+    id: '10000000-0000-0000-0000-000000000005',
+    refId: 'PRT-2026-1000',
     title: 'Apex Global Financial Leaders Summit',
     client: 'Apex Global Forum',
     tier: 'Tier-1 VIP (Bespoke Logistics)',
-    venue: 'Carrousel du Louvre, Paris',
-    targetDate: '2026-10-15',
-    installationStart: '12:00 PM',
-    installationEnd: '7:00 PM',
+    venue: 'Marriott Grand Ballroom, Pasay',
+    targetDate: '2026-09-24',
+    installationStart: '2026-09-23',
+    installationEnd: '2026-09-24',
     budget: 3900000,
-    status: 'Initialized',
+    status: 'Active',
     moodPlan: 'Mahogany banquet tables with refined brass table lamps.',
   },
   {
-    id: 'e-106',
-    refId: 'PRT-2026-0150',
+    id: '10000000-0000-0000-0000-000000000006',
+    refId: 'PRT-2026-1000',
     title: 'Haute Couture Resort Collection Showcase',
     client: 'Maison Couture Paris',
     tier: 'Tier-1 VIP (Bespoke Logistics)',
-    venue: 'Place Vendôme Pavilion, Paris',
-    targetDate: '2026-10-20',
-    installationStart: '4:00 PM',
-    installationEnd: '11:00 PM',
+    venue: 'City of Dreams Nüwa Ballroom, Parañaque',
+    targetDate: '2026-10-03',
+    installationStart: '2026-10-02',
+    installationEnd: '2026-10-03',
     budget: 4850000,
-    status: 'Initialized',
+    status: 'Planning',
     moodPlan: 'Mirror catwalk with rose gold accents and velvet seating.',
   },
   {
-    id: 'e-107',
-    refId: 'PRT-2026-0151',
+    id: '10000000-0000-0000-0000-000000000007',
+    refId: 'PRT-2026-1000',
     title: 'Luminary Sustainability & Innovation Awards',
     client: 'Global Eco Initiative',
     tier: 'Tier-2 Premium',
-    venue: 'Palais de Chaillot, Paris',
-    targetDate: '2026-10-26',
-    installationStart: '2:00 PM',
-    installationEnd: '9:00 PM',
+    venue: 'BGC Amphitheater Outdoor Arena, Taguig',
+    targetDate: '2026-10-14',
+    installationStart: '2026-10-13',
+    installationEnd: '2026-10-14',
     budget: 2300000,
-    status: 'Initialized',
+    status: 'Active',
     moodPlan: 'Living green walls and recycled timber centerpieces.',
   },
   {
-    id: 'e-108',
-    refId: 'PRT-2026-0152',
+    id: '10000000-0000-0000-0000-000000000008',
+    refId: 'PRT-2026-1000',
     title: 'Horizon Gaming & Esports Championship Final',
     client: 'Horizon Interactive',
     tier: 'Tier-1 VIP (Bespoke Logistics)',
-    venue: 'Accor Arena, Paris',
-    targetDate: '2026-11-02',
-    installationStart: '8:00 AM',
-    installationEnd: '4:00 PM',
+    venue: 'Mall of Asia Arena Main Stage, Pasay',
+    targetDate: '2026-10-20',
+    installationStart: '2026-10-18',
+    installationEnd: '2026-10-20',
     budget: 6500000,
-    status: 'Initialized',
+    status: 'Active',
     moodPlan: 'Neon blue trusses and immersive arena seating layout.',
   },
   {
-    id: 'e-109',
-    refId: 'PRT-2026-0153',
+    id: '10000000-0000-0000-0000-000000000009',
+    refId: 'PRT-2026-1000',
     title: 'Empress Fine Jewelry Private Exhibition',
     client: 'Empress House of Jewels',
     tier: 'Tier-1 VIP (Bespoke Logistics)',
-    venue: 'Hôtel de Crillon Salon, Paris',
-    targetDate: '2026-11-08',
-    installationStart: '5:00 PM',
-    installationEnd: '11:30 PM',
+    venue: 'The Peninsula Manila Conservatory',
+    targetDate: '2026-10-25',
+    installationStart: '2026-10-24',
+    installationEnd: '2026-10-25',
     budget: 7120000,
-    status: 'Initialized',
+    status: 'Active',
     moodPlan: 'Bulletproof glass pedestals with pinpoint spotlighting.',
   },
   {
-    id: 'e-110',
-    refId: 'PRT-2026-0154',
+    id: '10000000-0000-0000-0000-000000000010',
+    refId: 'PRT-2026-1000',
     title: 'AeroSpace Defense Systems Expo 2026',
     client: 'Global Aerospace Consortium',
     tier: 'Tier-2 Premium',
-    venue: 'Le Bourget Exhibition Centre, Paris',
-    targetDate: '2026-11-15',
-    installationStart: '1:00 PM',
-    installationEnd: '8:00 PM',
+    venue: 'World Trade Center Metro Manila Hall A',
+    targetDate: '2026-10-29',
+    installationStart: '2026-10-27',
+    installationEnd: '2026-10-29',
     budget: 3100000,
-    status: 'Initialized',
+    status: 'Completed',
     moodPlan: 'High-tech modular displays and aviation-grade flooring.',
   },
 ]
+
+function parseIsoDateParts(isoStr: string): { year: number; month: number; day: number } | null {
+  if (!isoStr) return null
+  const clean = isoStr.split('T')[0]
+  const parts = clean.split('-')
+  if (parts.length === 3) {
+    const y = parseInt(parts[0], 10)
+    const m = parseInt(parts[1], 10) - 1
+    const d = parseInt(parts[2], 10)
+    if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+      return { year: y, month: m, day: d }
+    }
+  }
+  return null
+}
 
 function makeEventAlias(title: string): string {
   const words = title.trim().split(/\s+/)
@@ -245,9 +261,9 @@ function mapPortalEventsToCards(evList: any[]): ProjectCard[] {
   ]
 
   return evList.map((ev, i) => {
-    const d = new Date(ev.targetDate)
-    const dateStr = !isNaN(d.getTime())
-      ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    const parts = parseIsoDateParts(ev.targetDate)
+    const dateStr = parts
+      ? `${MONTH_NAMES[parts.month].slice(0, 3)} ${parts.day}, ${parts.year}`
       : 'TBD'
     const title = ev.title || ev.name || 'Untitled Event'
     const alias = makeEventAlias(title)
@@ -1078,12 +1094,9 @@ export function DesignCanvasHubPage() {
     const events: CalendarEvent[] = []
 
     source.forEach((ev, index) => {
-      const d = new Date(ev.targetDate)
-      if (isNaN(d.getTime())) return
-      const y = d.getFullYear()
-      const m = d.getMonth()
-      const day = d.getDate()
-      if (y !== calYear || m !== calMonth) return
+      const parts = parseIsoDateParts(ev.targetDate)
+      if (!parts) return
+      if (parts.year !== calYear || parts.month !== calMonth) return
 
       const eventName = ev.title || ev.name || 'Untitled Event'
       const alias = makeEventAlias(eventName)
@@ -1091,9 +1104,9 @@ export function DesignCanvasHubPage() {
 
       events.push({
         id: `cal-ev-${ev.id}`,
-        day,
-        month: m,
-        year: y,
+        day: parts.day,
+        month: parts.month,
+        year: parts.year,
         name: eventName,
         alias,
         status: statuses[index % statuses.length],
@@ -1280,20 +1293,17 @@ export function DesignCanvasHubPage() {
     const all: CalendarEvent[] = []
 
     source.forEach((ev, index) => {
-      const d = new Date(ev.targetDate)
-      if (isNaN(d.getTime())) return
-      const y = d.getFullYear()
-      const m = d.getMonth()
-      const day = d.getDate()
+      const parts = parseIsoDateParts(ev.targetDate)
+      if (!parts) return
       const eventName = ev.title || ev.name || 'Untitled Event'
       const alias = makeEventAlias(eventName)
       const statuses: DesignStatus[] = ['Final Draft', 'Ready to Present', 'Subject to Review', 'Initial Draft']
 
       all.push({
         id: `up-ev-${ev.id}`,
-        day,
-        month: m,
-        year: y,
+        day: parts.day,
+        month: parts.month,
+        year: parts.year,
         name: eventName,
         alias,
         status: statuses[index % statuses.length],
