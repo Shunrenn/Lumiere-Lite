@@ -19,6 +19,8 @@ import { FifoSelector } from './shared/FifoSelector'
 import { PresetSelector } from './shared/PresetSelector'
 import { ManualCrewPicker } from './shared/ManualCrewPicker'
 
+import { assignManningApi } from '@/lib/manningApi'
+
 const FIELD_TASKS = [
   'Load-in & setup',
   'Décor styling',
@@ -196,11 +198,11 @@ export function AssignCrewModal({ events, crewRows, presetSquads, onClose }: Ass
 
   const canConfirm = Boolean(selectedEvent) && finalPicks.length > 0 && hasTeamLeadPicked && !isPastEventDate
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!selectedEvent || isPastEventDate) return
     if (!hasTeamLeadPicked) return
 
-    finalPicks.forEach((row) => {
+    for (const row of finalPicks) {
       assignCrewToEvent(row.staffId, {
         eventId: selectedEvent.id,
         event: selectedEvent.title,
@@ -208,7 +210,13 @@ export function AssignCrewModal({ events, crewRows, presetSquads, onClose }: Ass
         date: assignmentDate,
         task,
       })
-    })
+      await assignManningApi({
+        eventId: selectedEvent.id,
+        userId: row.staffId,
+        roleName: task,
+        shiftDate: assignmentDate,
+      })
+    }
     onClose()
   }
 

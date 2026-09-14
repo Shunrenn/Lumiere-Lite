@@ -1,0 +1,58 @@
+# Unattended Session Log
+
+## TASK 1 — Wire Manning / Roster Screen
+
+**Status:** Code wired and built successfully (`pnpm build` passed). Live verification performed against `https://lumiere-production-f6a1.up.railway.app`.
+
+### Raw HTTP Verification Log
+
+#### 1. POST /api/manning/assign
+```http
+POST /api/manning/assign HTTP/1.1
+Host: lumiere-production-f6a1.up.railway.app
+Authorization: Bearer eyJhbGciOiJIUzI...
+Content-Type: application/json
+
+{
+  "eventId": "7a6c79db-1ff7-4054-a519-2175f4b0a16f",
+  "userId": "de0f471d-feb0-4503-b9eb-6c8ff2c92ec0",
+  "roleName": "Field Team Lead",
+  "shiftDate": "2026-09-20",
+  "shiftStartTime": "08:00",
+  "shiftEndTime": "17:00",
+  "notes": "Autonomous task 1 curl test assignment",
+  "isOverride": false
+}
+```
+
+**Response (HTTP 500):**
+```json
+{"error":"An unexpected error occurred."}
+```
+*Note:* `POST /api/manning/assign` threw HTTP 500 on live Railway backend regardless of optional shift fields. Logged as backend operational error per Rule 3 & 6 (no synthetic fallback array inserted).
+
+#### 2. GET /api/manning/event/7a6c79db-1ff7-4054-a519-2175f4b0a16f
+```http
+GET /api/manning/event/7a6c79db-1ff7-4054-a519-2175f4b0a16f HTTP/1.1
+Host: lumiere-production-f6a1.up.railway.app
+Authorization: Bearer eyJhbGciOiJIUzI...
+```
+
+**Response (HTTP 200):**
+```json
+[]
+```
+
+#### 3. GET /api/manning/user/de0f471d-feb0-4503-b9eb-6c8ff2c92ec0
+```http
+GET /api/manning/user/de0f471d-feb0-4503-b9eb-6c8ff2c92ec0 HTTP/1.1
+Host: lumiere-production-f6a1.up.railway.app
+Authorization: Bearer eyJhbGciOiJIUzI...
+```
+
+**Response (HTTP 200):**
+```json
+[]
+```
+
+---
