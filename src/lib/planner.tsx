@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { supabase } from '@/lib/supabase'
-import { API_BASE_URL } from '@/lib/apiConfig'
+import { API_BASE_URL, getAuthToken } from '@/lib/apiConfig'
 
 /* ============================================================
    Event Planner domain — pipeline portfolios, design canvases,
@@ -605,27 +605,31 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     setEvents((prev) => [newEvent, ...prev])
 
     // Asynchronously dispatch event creation to API
-    const token = typeof window !== 'undefined' ? localStorage.getItem('_lumiere_auth_token') : null
+    const token = getAuthToken()
+    const backendPayload = {
+      eventName: draft.title,
+      eventVenue: draft.venue || 'Venue Pending',
+      geoClass: 'Local',
+      dateOfEvent: draft.date ? `${draft.date}T00:00:00Z` : new Date().toISOString(),
+      ingressDate: draft.date ? `${draft.date}T00:00:00Z` : new Date().toISOString(),
+      ingressTime: '08:00:00',
+      fullStop: '23:00:00',
+    }
+
     fetch(`${API_BASE_URL}/api/events`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({
-        title: draft.title,
-        client: draft.client,
-        tier: draft.tier,
-        date: draft.date,
-        venue: draft.venue,
-        transitBufferDays: draft.tier === 'VIP' ? 3 : 1,
-      }),
+      body: JSON.stringify(backendPayload),
     })
       .then(async (res) => {
         if (res.ok) {
           const created = await res.json()
-          if (created && created.id) {
-            setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, id: created.id } : e)))
+          const realId = created ? (created.eventId || created.id) : null
+          if (realId) {
+            setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, id: realId } : e)))
           }
         }
       })

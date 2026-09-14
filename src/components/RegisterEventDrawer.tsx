@@ -52,6 +52,10 @@ const emptyDraft: NewEventDraft = {
   installationStart: '',
   installationEnd: '',
   moodPlan: '',
+  geoClass: 'Local',
+  ingressDate: '',
+  ingressTime: '08:00',
+  fullStop: '23:00',
 }
 
 const labelClass =
@@ -343,6 +347,63 @@ export function RegisterEventDrawer({ open, onClose, event = null, mode = 'creat
                   className={inputClass}
                   value={draft.installationEnd}
                   onChange={(e) => set('installationEnd', e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Geographic Classification & Logistics Ingress/Fullstop */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelClass} htmlFor="ev-geo">
+                  Geographic Scope
+                </label>
+                <select
+                  id="ev-geo"
+                  className={`${inputClass} appearance-none`}
+                  value={draft.geoClass || 'Local'}
+                  onChange={(e) => set('geoClass', e.target.value)}
+                >
+                  <option value="Local">Local (NCR / Metro)</option>
+                  <option value="National">National (Regional)</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="ev-ingress-date">
+                  Ingress Date
+                </label>
+                <input
+                  id="ev-ingress-date"
+                  type="date"
+                  className={inputClass}
+                  value={draft.ingressDate || (draft.targetDate ? draft.targetDate : '')}
+                  onChange={(e) => set('ingressDate', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelClass} htmlFor="ev-ingress-time">
+                  Ingress Time
+                </label>
+                <input
+                  id="ev-ingress-time"
+                  type="time"
+                  className={inputClass}
+                  value={draft.ingressTime || '08:00'}
+                  onChange={(e) => set('ingressTime', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="ev-fullstop">
+                  Full Stop Time
+                </label>
+                <input
+                  id="ev-fullstop"
+                  type="time"
+                  className={inputClass}
+                  value={draft.fullStop || '23:00'}
+                  onChange={(e) => set('fullStop', e.target.value)}
                 />
               </div>
             </div>

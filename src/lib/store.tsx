@@ -1,6 +1,6 @@
 import { logAuditEvent } from '@/lib/audit-logger'
 import * as damageApi from '@/lib/damageApi'
-import { API_BASE_URL } from '@/lib/apiConfig'
+import { API_BASE_URL, getAuthToken } from '@/lib/apiConfig'
 import {
   createContext,
   useCallback,
@@ -1493,7 +1493,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true
     const loadReports = async () => {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('_lumiere_auth_token') : null
+      const token = getAuthToken()
       if (!token) return
 
       try {
@@ -1873,28 +1873,49 @@ export function PortalProvider({ children }: { children: ReactNode }) {
         ]
       })
 
-      // Asynchronously post to backend API endpoint
-      const token = typeof window !== 'undefined' ? localStorage.getItem('_lumiere_auth_token') : null
+      // Asynchronously post to backend API endpoint with mapped DTO schema
+      const token = getAuthToken()
+
+      const dateOfEventIso = draft.targetDate
+        ? `${draft.targetDate}T00:00:00Z`
+        : new Date().toISOString()
+      const ingressDateIso = draft.ingressDate
+        ? `${draft.ingressDate}T00:00:00Z`
+        : draft.installationStart
+        ? `${draft.installationStart}T00:00:00Z`
+        : draft.targetDate
+        ? `${draft.targetDate}T00:00:00Z`
+        : dateOfEventIso
+
+      const formatTimeStr = (t?: string, defaultVal = '08:00:00') => {
+        if (!t) return defaultVal
+        return t.length === 5 ? `${t}:00` : t
+      }
+
+      const backendPayload = {
+        eventName: draft.title,
+        eventVenue: draft.venue || 'Venue Pending',
+        geoClass: draft.geoClass || 'Local',
+        dateOfEvent: dateOfEventIso,
+        ingressDate: ingressDateIso,
+        ingressTime: formatTimeStr(draft.ingressTime, '08:00:00'),
+        fullStop: formatTimeStr(draft.fullStop, '23:00:00'),
+      }
+
       fetch(`${API_BASE_URL}/api/events`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({
-          title: draft.title,
-          client: draft.client,
-          venue: draft.venue,
-          targetDate: draft.targetDate,
-          installationStart: draft.installationStart,
-          installationEnd: draft.installationEnd,
-        }),
+        body: JSON.stringify(backendPayload),
       })
         .then(async (res) => {
           if (res.ok) {
             const created = await res.json()
-            if (created && created.id) {
-              setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...e, id: created.id } : e)))
+            const realId = created ? (created.eventId || created.id) : null
+            if (realId) {
+              setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...e, id: realId } : e)))
             }
           }
         })

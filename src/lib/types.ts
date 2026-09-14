@@ -201,6 +201,10 @@ export interface NewEventDraft {
   installationStart: string
   installationEnd: string
   moodPlan: string
+  geoClass?: string
+  ingressDate?: string
+  ingressTime?: string
+  fullStop?: string
 }
 
 /* ---------- Account / User Actions ---------- */
