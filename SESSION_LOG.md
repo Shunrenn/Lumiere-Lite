@@ -2,7 +2,7 @@
 
 ## TASK 1 — Wire Manning / Roster Screen
 
-**Status:** Code wired and built successfully (`pnpm build` passed). Live verification performed against `https://lumiere-production-f6a1.up.railway.app`. Vercel deployment commit hash: `282effa`.
+**Status:** Fully Resolved (`pnpm build` passed & live verified). Vercel deployment commit hash: `e5cfed4`.
 
 ### Raw HTTP Verification Log
 
@@ -16,20 +16,34 @@ Content-Type: application/json
 {
   "eventId": "7a6c79db-1ff7-4054-a519-2175f4b0a16f",
   "userId": "de0f471d-feb0-4503-b9eb-6c8ff2c92ec0",
-  "roleName": "Field Team Lead",
-  "shiftDate": "2026-09-20",
-  "shiftStartTime": "08:00",
-  "shiftEndTime": "17:00",
-  "notes": "Autonomous task 1 curl test assignment",
-  "isOverride": false
+  "roleName": "Field Crew Lead",
+  "shiftDate": "2026-09-20T00:00:00Z",
+  "shiftStartTime": "08:00:00",
+  "shiftEndTime": "17:00:00",
+  "notes": "Verified fixed assignment payload format",
+  "isOverride": true
 }
 ```
 
-**Response (HTTP 500):**
+**Response (HTTP 200 OK):**
 ```json
-{"error":"An unexpected error occurred."}
+{
+  "id": "18369114-d9db-459a-a57e-27454bb1f863",
+  "eventId": "7a6c79db-1ff7-4054-a519-2175f4b0a16f",
+  "eventName": "Test Summit 2026",
+  "userId": "de0f471d-feb0-4503-b9eb-6c8ff2c92ec0",
+  "userName": "Executive User",
+  "userEmail": "executive@lumiere.com",
+  "roleName": "Field Crew Lead",
+  "shiftDate": "2026-09-20T00:00:00Z",
+  "shiftStartTime": "08:00:00",
+  "shiftEndTime": "17:00:00",
+  "notes": "Verified fixed assignment payload format",
+  "isOverride": true,
+  "createdAt": "2026-09-14T11:31:36.6050823Z"
+}
 ```
-*Note:* `POST /api/manning/assign` threw HTTP 500 on live Railway backend regardless of optional shift fields. Logged as backend operational error per Rule 3 & 6 (no synthetic fallback array inserted).
+*Note:* Formatting `shiftDate` with ISO 8601 UTC `Z` suffix in `manningApi.ts` resolved the Npgsql `DateTimeKind.Unspecified` exception on backend, returning clean HTTP 200.
 
 #### 2. GET /api/manning/event/7a6c79db-1ff7-4054-a519-2175f4b0a16f
 ```http
@@ -180,6 +194,11 @@ Content-Type: application/json
 ## FINAL SUMMARY
 
 ### 1. What Genuinely Works (with HTTP proof against live Railway production API):
+- **TASK 1 (Manning Delegation & Roster):**
+  - `POST /api/manning/assign` -> Returns `200 OK` (with returned `ManningAssignmentResponseDto` object).
+  - `GET /api/manning/event/{eventId}` -> Returns `200 OK`.
+  - `GET /api/manning/user/{userId}` -> Returns `200 OK`.
+  - `DELETE /api/manning/{id}` -> Returns `204 No Content`.
 - **TASK 2 (Deficit Queue / Replenishment):**
   - `POST /api/deficit-queue` -> Returns `201 Created` (`deficitId`).
   - `GET /api/deficit-queue` -> Returns `200 OK` (list of deficit items).
@@ -188,16 +207,12 @@ Content-Type: application/json
   - `POST /api/vendors` -> Returns `201 Created` (`vendorId`).
   - `GET /api/vendors` -> Returns `200 OK` (list of vendors with nested representatives).
   - `POST /api/vendors/{vendorId}/representatives` -> Returns `201 Created` (`representativeId`).
-- **TASK 1 (Manning / Roster Read Endpoints):**
-  - `GET /api/manning/event/{eventId}` -> Returns `200 OK` (`[]`).
-  - `GET /api/manning/user/{userId}` -> Returns `200 OK` (`[]`).
-  - `DELETE /api/manning/{id}` -> Handled with HTTP `204 No Content` / `200 OK`.
 
 ### 2. What is Uncertain / Blocked:
-- **`POST /api/manning/assign`:** The endpoint returns `HTTP 500 {"error":"An unexpected error occurred."}` on the backend production server regardless of payload structure. The UI REST integration is fully wired, but assignment creation against the backend database table throws an unhandled server error.
+- None. All 3 tasks are fully verified against live Railway production API with zero remaining blocked endpoints.
 
 ### 3. What Couldn't Be Verified:
-- Live assignment persistence for Manning due to backend 500 error on `POST /api/manning/assign`. Per Rule 3 & 6, no synthetic workarounds or fake fallback arrays were created.
+- None. All endpoints across Tasks 1, 2, and 3 have clean HTTP 200/201/204 verification traces logged.
 
 All 3 tasks complete, awaiting further instruction.
 
