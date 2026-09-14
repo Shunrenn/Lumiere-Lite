@@ -83,10 +83,35 @@ export async function fetchManningForUser(userId: string): Promise<ManningRecord
  */
 export async function assignManningApi(req: AssignManningRequestDto): Promise<ManningRecordDto | null> {
   try {
+    const formattedShiftDate = req.shiftDate
+      ? req.shiftDate.includes('T')
+        ? req.shiftDate
+        : `${req.shiftDate}T00:00:00Z`
+      : new Date().toISOString()
+
+    const formattedStartTime = req.shiftStartTime
+      ? req.shiftStartTime.length === 5
+        ? `${req.shiftStartTime}:00`
+        : req.shiftStartTime
+      : null
+
+    const formattedEndTime = req.shiftEndTime
+      ? req.shiftEndTime.length === 5
+        ? `${req.shiftEndTime}:00`
+        : req.shiftEndTime
+      : null
+
+    const payload = {
+      ...req,
+      shiftDate: formattedShiftDate,
+      shiftStartTime: formattedStartTime,
+      shiftEndTime: formattedEndTime,
+    }
+
     const res = await fetch(`${API_BASE_URL}/api/manning/assign`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify(req),
+      body: JSON.stringify(payload),
     })
     if (!res.ok) {
       console.warn(`[manningApi] POST /api/manning/assign returned HTTP ${res.status}`)
