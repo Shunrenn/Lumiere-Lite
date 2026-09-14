@@ -97,8 +97,8 @@ interface AddAssetModalProps {
 }
 
 /**
- * Simulates background removal by processing image canvas or returning transparent cutout data URL.
- * Falls back gracefully to original photo if anything fails.
+ * Client-side chroma preview for asset photos.
+ * Note: Catalog cutouts are produced by the backend API IBackgroundRemovalService (PRD-F14) upon asset upload.
  */
 async function processBackgroundRemoval(dataUrl: string): Promise<string | null> {
   return new Promise((resolve) => {
@@ -119,7 +119,6 @@ async function processBackgroundRemoval(dataUrl: string): Promise<string | null>
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
         const data = imageData.data
 
-        // Process top-left background pixel sample
         const bgR = data[0]
         const bgG = data[1]
         const bgB = data[2]
@@ -138,7 +137,7 @@ async function processBackgroundRemoval(dataUrl: string): Promise<string | null>
           const isLightBg = r > 238 && g > 238 && b > 238
 
           if (isNearBg || isLightBg) {
-            data[i + 3] = 0 // Set alpha to transparent
+            data[i + 3] = 0
           }
         }
 
@@ -339,6 +338,26 @@ export function AddAssetModal({ onClose, onCreate }: AddAssetModalProps) {
       serialNumber: serialNumber.trim() || undefined,
       deviceSpecs: deviceSpecs.trim() || undefined,
     }
+
+    import('@/lib/warehouse-catalog').then(({ addCatalogAsset }) => {
+      addCatalogAsset({
+        id: `cat-${Date.now()}`,
+        assetId: `LM-${category.slice(0, 2).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        name: draft.name,
+        itemCallName: draft.itemCallName,
+        category: draft.category,
+        subCategory: draft.subCategory,
+        description: draft.description,
+        status: 'Available',
+        image: draft.image || '',
+        unit: draft.unit,
+        dimensions: draft.dimensions || { height: '—', width: '—', depth: '—', weight: '—' },
+        purchaseCost: draft.purchaseCost || 0,
+        costPerUnit: draft.costPerUnit || 0,
+        primaryVendorId: draft.primaryVendorId || 'v-1',
+        dateAdded: new Date().toISOString().slice(0, 10),
+      })
+    })
 
     onCreate(draft)
   }

@@ -29,7 +29,7 @@ export function LoginPage({ onCrewPortal }: { onCrewPortal: () => void }) {
     setError('')
     setSigningIn(true)
     try {
-      const result = await login(email, password, 'web')
+      const result = await login(email, password, 'web', remember)
       if (!result.ok) setError(result.reason === 'wrong-portal' ? 'This account belongs to the Lumière PWA. Use the PWA login to continue.' : 'Invalid credentials. Please verify your email and password.')
     } finally {
       setSigningIn(false)

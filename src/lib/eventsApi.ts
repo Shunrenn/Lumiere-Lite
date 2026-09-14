@@ -1,0 +1,83 @@
+import { API_BASE_URL, getAuthToken } from './apiConfig'
+import type { PortalEvent } from './types'
+
+export interface EventResponseDto {
+  id: string
+  name?: string
+  title?: string
+  dateOfEvent?: string
+  targetDate?: string
+  venue?: string
+  status?: string
+  isLossMaker?: boolean
+}
+
+function getAuthHeaders(): HeadersInit {
+  const token = getAuthToken()
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+  return headers
+}
+
+export function mapEventResponseToPortalEvent(dto: EventResponseDto, index = 0): PortalEvent {
+  const eventTitle = dto.name || dto.title || 'Untitled Event'
+  const eventDate = dto.dateOfEvent || dto.targetDate || new Date().toISOString().slice(0, 10)
+  const shortRef = dto.id ? dto.id.slice(0, 4).toUpperCase() : String(145 + index)
+  
+  return {
+    id: dto.id,
+    refId: `PRT-2026-${shortRef}`,
+    title: eventTitle,
+    client: 'Not available from backend yet',
+    tier: 'Tier-3 Standard',
+    venue: dto.venue || 'Venue pending assignment',
+    targetDate: eventDate,
+    installationStart: eventDate,
+    installationEnd: eventDate,
+    budget: 0,
+    status: (dto.status || 'Initialized') as any,
+    moodPlan: '',
+  }
+}
+
+/**
+ * Fetches all events from GET /api/events.
+ */
+export async function fetchEventsApi(): Promise<PortalEvent[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/events`, {
+      headers: getAuthHeaders(),
+    })
+    if (!res.ok) {
+      console.warn(`[eventsApi] GET /api/events returned HTTP ${res.status}`)
+      return []
+    }
+    const data: EventResponseDto[] = await res.json()
+    if (!Array.isArray(data)) return []
+    return data.map((dto, idx) => mapEventResponseToPortalEvent(dto, idx))
+  } catch (err) {
+    console.warn('[eventsApi] GET /api/events fetch skipped/fallback:', err)
+    return []
+  }
+}
+
+/**
+ * Fetches a single event by ID from GET /api/events/{id}.
+ */
+export async function fetchEventByIdApi(eventId: string): Promise<PortalEvent | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/events/${encodeURIComponent(eventId)}`, {
+      headers: getAuthHeaders(),
+    })
+    if (!res.ok) return null
+    const dto: EventResponseDto = await res.json()
+    return mapEventResponseToPortalEvent(dto)
+  } catch (err) {
+    console.warn(`[eventsApi] GET /api/events/${eventId} fetch skipped/fallback:`, err)
+    return null
+  }
+}

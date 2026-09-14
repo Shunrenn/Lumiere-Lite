@@ -18,6 +18,18 @@
   <meta name="description"
     content="Infrastructure overview, incident monitoring, and admin governance for the LUMIÈRE platform." />
   <title>Lumière — Your Digital Co-Event Planner</title>
+  <link rel="manifest" href="/manifest.json" />
+  <script>
+    if ('serviceWorker' in navigator && !window.location.hostname.includes('localhost')) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js').then(function(reg) {
+          console.log('[PWA] ServiceWorker registered with scope:', reg.scope);
+        }).catch(function(err) {
+          console.warn('[PWA] ServiceWorker registration failed:', err);
+        });
+      });
+    }
+  </script>
 </head>
 
 <body>

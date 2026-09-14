@@ -1,5 +1,6 @@
 import { logAuditEvent } from '@/lib/audit-logger'
 import * as damageApi from '@/lib/damageApi'
+import { API_BASE_URL } from '@/lib/apiConfig'
 import {
   createContext,
   useCallback,
@@ -1498,6 +1499,24 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   const [staff, setStaff] = useState<Staff[]>(seedStaff)
   const [events, setEvents] = useState<PortalEvent[]>(seedEvents)
 
+  // Hydrate events list from backend REST API (GET /api/events)
+  useEffect(() => {
+    let active = true
+    import('@/lib/eventsApi').then(({ fetchEventsApi }) => {
+      fetchEventsApi().then((remoteEvents) => {
+        if (!active || !remoteEvents.length) return
+        setEvents((prev) => {
+          const existingIds = new Set(prev.map((e) => e.id))
+          const newRemote = remoteEvents.filter((e) => !existingIds.has(e.id))
+          return [...newRemote, ...prev]
+        })
+      })
+    })
+    return () => {
+      active = false
+    }
+  }, [])
+
   // Hydrate the staff directory from the database (portal_accounts is the source of truth).
   useEffect(() => {
     let active = true
@@ -1917,6 +1936,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
 
   const addEvent = useCallback(
     (draft: NewEventDraft, initiatorRole = 'Executive') => {
+      const tempId = `e-${Date.now()}`
       setEvents((prev) => {
         const refId = `PRT-2026-${pad(145 + prev.length)}`
         pushLog({
@@ -1932,7 +1952,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
         return [
           ...prev,
           {
-            id: `e-${Date.now()}`,
+            id: tempId,
             refId,
             title: draft.title,
             client: draft.client,
@@ -1947,6 +1967,33 @@ export function PortalProvider({ children }: { children: ReactNode }) {
           },
         ]
       })
+
+      // Asynchronously post to backend API endpoint
+      const token = typeof window !== 'undefined' ? localStorage.getItem('_lumiere_auth_token') : null
+      fetch(`${API_BASE_URL}/api/events`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          title: draft.title,
+          client: draft.client,
+          venue: draft.venue,
+          targetDate: draft.targetDate,
+          installationStart: draft.installationStart,
+          installationEnd: draft.installationEnd,
+        }),
+      })
+        .then(async (res) => {
+          if (res.ok) {
+            const created = await res.json()
+            if (created && created.id) {
+              setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...e, id: created.id } : e)))
+            }
+          }
+        })
+        .catch((err) => console.warn('[store] POST /api/events skipped/failed:', err))
     },
     [pushLog],
   )

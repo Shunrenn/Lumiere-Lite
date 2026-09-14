@@ -432,3 +432,11 @@ export function womModuleAccessLevel(subRoleName: string, moduleId: string): Acc
   if (!sub || !moduleName) return 'None'
   return sub.permissions.find((perm) => perm.module === moduleName)?.level ?? 'None'
 }
+
+export function updateSubRoleQuotas(subRoleId: string, minTeamLeads: number, maxTeamLeads: number) {
+  const target = WOM_SUBROLES.find((sub) => sub.id === subRoleId)
+  if (target) {
+    target.minTeamLeads = minTeamLeads
+    target.maxTeamLeads = maxTeamLeads
+  }
+}

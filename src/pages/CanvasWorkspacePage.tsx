@@ -2933,8 +2933,36 @@ export function CanvasWorkspacePage() {
   useEffect(() => {
     if (card?.id) {
       localStorage.setItem(`lumiere-dropped-assets-${card.id}`, JSON.stringify(droppedAssets))
+      // Asynchronously persist canvas layout state to PUT /api/canvas/event/{eventId}
+      const eventId = pipelineEvent?.id || card.id
+      import('@/lib/canvasApi').then(({ saveCanvasLayoutApi }) => {
+        saveCanvasLayoutApi(eventId, JSON.stringify(droppedAssets))
+      })
     }
-  }, [droppedAssets, card?.id])
+  }, [droppedAssets, card?.id, pipelineEvent?.id])
+
+  // Hydrate canvas layout state from GET /api/canvas/event/{eventId}
+  useEffect(() => {
+    let active = true
+    const eventId = pipelineEvent?.id || card?.id
+    if (!eventId) return
+    import('@/lib/canvasApi').then(({ fetchCanvasLayoutApi }) => {
+      fetchCanvasLayoutApi(eventId).then((layoutDto) => {
+        if (!active || !layoutDto?.canvasState) return
+        try {
+          const parsed = JSON.parse(layoutDto.canvasState)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setDroppedAssets(parsed)
+          }
+        } catch (err) {
+          console.warn('[CanvasWorkspace] Failed to parse backend canvas canvasState:', err)
+        }
+      })
+    })
+    return () => {
+      active = false
+    }
+  }, [pipelineEvent?.id, card?.id])
 
   useEffect(() => {
     if (card?.id) {

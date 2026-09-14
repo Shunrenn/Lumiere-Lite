@@ -6,6 +6,7 @@
 // or a one-off bespoke build.
 import { useSyncExternalStore } from 'react'
 import { getWarehouseVendors } from '@/lib/warehouse-vendors'
+import { createAssetApi, updateAssetApi } from './assetsApi'
 
 import type { WarehouseZone } from '@/lib/warehouse-crew'
 
@@ -706,6 +707,7 @@ export function addCatalogAsset(asset: CatalogAsset): CatalogAsset {
   const existing = getCatalogAssets()
   cachedCatalog = [asset, ...existing]
   publishCatalog()
+  void createAssetApi(asset)
   return asset
 }
 
@@ -713,6 +715,7 @@ export function updateCatalogAsset(id: string, changes: Partial<Omit<CatalogAsse
   const existing = getCatalogAssets()
   cachedCatalog = existing.map((asset) => (asset.id === id ? { ...asset, ...changes } : asset))
   publishCatalog()
+  void updateAssetApi(id, changes)
 }
 
 // Any Event Asset / Stockroom line sitting under its reorder threshold.
@@ -829,6 +832,8 @@ export function updateBespokeSubCategoryConfig(subCategory: string, maxParallelW
   }
 }
 
+
+
 export function updateAssetSimulation(
   assetId: string,
   attempts: BespokeSimulationAttempt[],
@@ -847,6 +852,12 @@ export function updateAssetSimulation(
   target.simulationHeadcount = headcount
   target.simulationAttempts = attempts
   target.baseSingleWorkerTimeMinutes = meanTime
+
+  void updateAssetApi(target.id, {
+    simulationHeadcount: headcount,
+    simulationAttempts: attempts,
+    baseSingleWorkerTimeMinutes: meanTime,
+  })
 
   return target
 }

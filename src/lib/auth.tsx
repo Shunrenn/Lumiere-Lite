@@ -126,6 +126,51 @@ export const EXECUTIVE_LOGIN_EMAILS = ['executive@lumiere.com', 'executive2@lumi
 
 
 
+export function parseJwtPayload(token: string): Record<string, any> | null {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    const base64Url = parts[1]
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    )
+    return JSON.parse(jsonPayload)
+  } catch {
+    return null
+  }
+}
+
+export function isJwtExpired(token: string): boolean {
+  const payload = parseJwtPayload(token)
+  if (!payload || typeof payload.exp !== 'number') return false
+  return payload.exp * 1000 <= Date.now()
+}
+
+export function clearStoredAuth() {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem('_lumiere_auth_user')
+  localStorage.removeItem('_lumiere_auth_portal')
+  localStorage.removeItem('_lumiere_auth_token')
+  sessionStorage.removeItem('_lumiere_auth_user')
+  sessionStorage.removeItem('_lumiere_auth_portal')
+  sessionStorage.removeItem('_lumiere_auth_token')
+}
+
+export function getStoredAuth() {
+  if (typeof window === 'undefined') return { rawUser: null, rawToken: null, isSession: false }
+  const localUser = localStorage.getItem('_lumiere_auth_user')
+  const sessionUser = sessionStorage.getItem('_lumiere_auth_user')
+  const rawUser = localUser || sessionUser
+  const localToken = localStorage.getItem('_lumiere_auth_token')
+  const sessionToken = sessionStorage.getItem('_lumiere_auth_token')
+  const rawToken = localToken || sessionToken
+  return { rawUser, rawToken, isSession: !localUser && Boolean(sessionUser) }
+}
+
 interface AuthContextValue {
   isAuthenticated: boolean
   adminName: string
@@ -139,37 +184,21 @@ interface AuthContextValue {
   isGroundCrew: boolean
   isWarehouseLead: boolean
   isWarehouseMember: boolean
-  // Sub-role of the current account ('' when none, including the full-access
-  // Warehouse Ops Manager super-account).
   subRole: string
-  // Warehouse Ops Manager super-account — full, unrestricted WOM access.
   hasFullWarehouseAccess: boolean
-  // WOM Manning Officer sub-role — has full crew-detail visibility rights.
   isManningOfficer: boolean
-  // WOM Production Manager sub-role — may approve/reject production runs.
   isProductionManager: boolean
   isInventoryOfficer: boolean
-  // True when the current account may Modify the given operational module id
-  // (per its RBAC sub-role scope, or always for the full-access account).
   canModifyModule: (moduleId: string) => boolean
   isTempPassword: boolean
-  login: (email: string, password: string, portal?: PortalKind) => Promise<{ ok: boolean; reason?: 'wrong-portal' | 'invalid' }>
+  login: (email: string, password: string, portal?: PortalKind, remember?: boolean) => Promise<{ ok: boolean; reason?: 'wrong-portal' | 'invalid' }>
   changePassword: (current: string, next: string) => Promise<boolean>
   logout: () => void
   confirmLogout: boolean
   setConfirmLogout: (value: boolean) => void
-  // Whether the current account has completed first-time PIN setup yet.
   hasConfirmationPin: boolean
-  // Checks a 6-digit PIN against the current account's stored PIN.
   verifyConfirmationPin: (pin: string) => boolean
-  // Sets the PIN for the first time, or overwrites it (used by both
-  // first-time setup and the post-password-reset flow). No "current PIN"
-  // check here — callers gate this themselves (first-time = nothing to
-  // check; reset = already gated by verifyPassword).
   setConfirmationPin: (pin: string) => void
-  // Re-verifies the current account's login password (used by "Forgot
-  // PIN?" as the re-authentication step). Distinct from changePassword,
-  // which also mutates the password.
   verifyPassword: (password: string) => Promise<boolean>
 }
 
@@ -179,61 +208,101 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<PortalAccount | null>(null)
   const [confirmLogout, setConfirmLogout] = useState(false)
 
-  // On mount, check if there's a cached login in localStorage
+  const logout = useCallback(() => {
+    setCurrentUser(null)
+    clearStoredAuth()
+  }, [])
+
+  // Listen for global HTTP 401 Unauthorized events (e.g. token expired mid-session)
   useEffect(() => {
-    const cached = localStorage.getItem('_lumiere_auth_user')
-    if (cached) {
+    const handleUnauthorized = () => {
+      console.warn('[Auth] 401 Unauthorized event intercepted. Logging out.')
+      logout()
+    }
+    window.addEventListener('lumiere:unauthorized', handleUnauthorized)
+    return () => window.removeEventListener('lumiere:unauthorized', handleUnauthorized)
+  }, [logout])
+
+  // On mount, check cached login from localStorage or sessionStorage with JWT expiration validation
+  useEffect(() => {
+    const { rawUser, rawToken, isSession } = getStoredAuth()
+    if (rawUser) {
       try {
-        const parsed = JSON.parse(cached) as PortalAccount
+        const parsed = JSON.parse(rawUser) as PortalAccount
+        const token = parsed.token || rawToken
+
+        if (token && isJwtExpired(token)) {
+          console.warn('[Auth] JWT token is expired on mount. Clearing auth state.')
+          clearStoredAuth()
+          setCurrentUser(null)
+          return
+        }
+
         const normalized = { ...parsed, portal: inferPortal(parsed) }
         setCurrentUser(normalized)
-        localStorage.setItem('_lumiere_auth_user', JSON.stringify(normalized))
-        localStorage.setItem('_lumiere_auth_portal', normalized.portal)
+        const storage = isSession ? sessionStorage : localStorage
+        storage.setItem('_lumiere_auth_user', JSON.stringify(normalized))
+        storage.setItem('_lumiere_auth_portal', normalized.portal)
       } catch {
-        localStorage.removeItem('_lumiere_auth_user')
+        clearStoredAuth()
+        setCurrentUser(null)
       }
     }
   }, [])
 
-  const login = useCallback(async (email: string, password: string, portal?: PortalKind): Promise<{ ok: boolean; reason?: 'wrong-portal' | 'invalid' }> => {
-    const normalizedEmail = email.trim().toLowerCase()
+  const login = useCallback(
+    async (
+      email: string,
+      password: string,
+      portal?: PortalKind,
+      remember = false
+    ): Promise<{ ok: boolean; reason?: 'wrong-portal' | 'invalid' }> => {
+      const normalizedEmail = email.trim().toLowerCase()
 
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: normalizedEmail, password }),
-      })
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: normalizedEmail, password }),
+        })
 
-      if (res.ok) {
-        const data = (await res.json()) as { token: string; fullName: string; email: string; userId: string; role: string }
-        const account = mapBackendUserToPortalAccount(data)
+        if (res.ok) {
+          const data = (await res.json()) as { token: string; fullName: string; email: string; userId: string; role: string }
+          const account = mapBackendUserToPortalAccount(data)
 
-        if (portal && account.portal !== portal) {
-          return { ok: false, reason: 'wrong-portal' }
+          if (portal && account.portal !== portal) {
+            return { ok: false, reason: 'wrong-portal' }
+          }
+
+          setCurrentUser(account)
+          const storage = remember ? localStorage : sessionStorage
+          const otherStorage = remember ? sessionStorage : localStorage
+
+          otherStorage.removeItem('_lumiere_auth_user')
+          otherStorage.removeItem('_lumiere_auth_portal')
+          otherStorage.removeItem('_lumiere_auth_token')
+
+          storage.setItem('_lumiere_auth_user', JSON.stringify(account))
+          storage.setItem('_lumiere_auth_portal', account.portal)
+          if (data.token) {
+            storage.setItem('_lumiere_auth_token', data.token)
+          }
+          return { ok: true }
         }
 
-        setCurrentUser(account)
-        localStorage.setItem('_lumiere_auth_user', JSON.stringify(account))
-        localStorage.setItem('_lumiere_auth_portal', account.portal)
-        if (data.token) {
-          localStorage.setItem('_lumiere_auth_token', data.token)
-        }
-        return { ok: true }
+        return { ok: false, reason: 'invalid' }
+      } catch (err) {
+        console.error('[Auth] Login error:', err)
+        return { ok: false, reason: 'invalid' }
       }
-
-      return { ok: false, reason: 'invalid' }
-    } catch (err) {
-      console.error('[Auth] Login error:', err)
-      return { ok: false, reason: 'invalid' }
-    }
-  }, [])
+    },
+    []
+  )
 
   const changePassword = useCallback(
     async (current: string, next: string) => {
       if (!currentUser) return false
       try {
-        // Verify current password
         const { data: verify, error: verifyError } = await supabase
           .from('portal_accounts')
           .select('id')
@@ -245,7 +314,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return false
         }
 
-        // Update password and clear temporary flag
         const { error } = await supabase
           .from('portal_accounts')
           .update({ password_hash: next, temporary_password: false })
@@ -255,10 +323,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return false
         }
 
-        // Update local state
         const updated = { ...currentUser, temporaryPassword: false }
         setCurrentUser(updated)
-        localStorage.setItem('_lumiere_auth_user', JSON.stringify(updated))
+        const { isSession } = getStoredAuth()
+        const storage = isSession ? sessionStorage : localStorage
+        storage.setItem('_lumiere_auth_user', JSON.stringify(updated))
         return true
       } catch (err) {
         console.error('[v0] Password change error:', err)
@@ -267,13 +336,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     [currentUser],
   )
-
-  const logout = useCallback(() => {
-    setCurrentUser(null)
-    localStorage.removeItem('_lumiere_auth_user')
-    localStorage.removeItem('_lumiere_auth_portal')
-    localStorage.removeItem('_lumiere_auth_token')
-  }, [])
 
   // Verifies the current account's login password without changing it.
   // Used as the re-authentication step for "Forgot PIN?" — deliberately has
@@ -308,7 +370,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!currentUser) return
       const updated = { ...currentUser, confirmationPinHash: pin }
       setCurrentUser(updated)
-      localStorage.setItem('_lumiere_auth_user', JSON.stringify(updated))
+      const { isSession } = getStoredAuth()
+      const storage = isSession ? sessionStorage : localStorage
+      storage.setItem('_lumiere_auth_user', JSON.stringify(updated))
     },
     [currentUser],
   )

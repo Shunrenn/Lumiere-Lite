@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { AlertTriangle, Bell, CalendarDays, Camera, Check, ChevronLeft, ChevronRight, ClipboardList, FileText, Lock, MapPin, MessageSquare, PackageCheck, Send, ShieldCheck, UserCircle2, X } from 'lucide-react'
+import { AlertTriangle, Bell, CalendarDays, Camera, Check, ChevronLeft, ChevronRight, ClipboardList, FileText, Lock, MapPin, MessageSquare, PackageCheck, Send, ShieldCheck, UserCircle2, X, Wifi, WifiOff, RefreshCw } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { usePortal } from '@/lib/store'
 import { markBatchStalled, resolveBatchStall, useDispatchStore } from '@/lib/warehouse-dispatch'
 import type { DispatchBatch } from '@/lib/event-detail'
 import { IncidentForm } from '@/components/PwaWorkflows'
 import { decideGroundCrewDeclaration, getApproachingDeclarationsSummary, getDeclarationAging, submitGroundCrewDeclaration, useGroundCrewDeclarations, type GroundCrewDeclaration } from '@/lib/ground-crew-declarations'
+import { subscribeOfflineSync, triggerOfflineReplay } from '@/lib/offlineReplay'
+import { cn } from '@/lib/utils'
 
 type Tab = 'home' | 'tasks' | 'calendar' | 'activity' | 'account'
 type AccessLevel = 'Ground Crew / Member' | 'Team Lead / Field Lead' | 'Receiver' | 'Event Admin'
@@ -91,6 +93,28 @@ export function GroundCrewPage() {
   const [requestDate, setRequestDate] = useState('2026-08-30')
   const [requestNote, setRequestNote] = useState('')
 
+  const [isOnline, setIsOnline] = useState<boolean>(() => typeof navigator !== 'undefined' ? navigator.onLine : true)
+  const [pendingSyncCount, setPendingSyncCount] = useState<number>(0)
+  const [isSyncing, setIsSyncing] = useState<boolean>(false)
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    const unsubscribe = subscribeOfflineSync((count, syncing) => {
+      setPendingSyncCount(count)
+      setIsSyncing(syncing)
+    })
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+      unsubscribe()
+    }
+  }, [])
+
   const notify = (message: string) => { setToast(message); window.setTimeout(() => setToast(''), 5000) }
   const openReport = (item: EventItem['items'][number]) => { setReportItem(item); setShowReport(true) }
   const submitReport = (event: FormEvent<HTMLFormElement>) => {
@@ -106,7 +130,8 @@ export function GroundCrewPage() {
       const description = String(data.get('description') || '')
       submitGroundCrewDeclaration({ eventId: selectedEvent.id, eventName: selectedEvent.name, item: reportItem.name, condition: condition as 'Damaged' | 'Missing', quantity, description, submittedBy: adminName || 'Ground Crew Member', submittedRole: accessLevel === 'Event Admin' ? 'Field Lead' : accessLevel === 'Ground Crew / Member' ? 'Member' : 'Team Lead', submittedAt: new Date().toISOString(), demoLabel: undefined })
       setReports((current) => [{ id: `r-${Date.now()}`, event: selectedEvent.name, item: reportItem.name, phase: selectedEvent.phase, quantity, description, photo: photoCaptured ? 'photo-capture.jpg' : '', capturedAt: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }), location }, ...current])
-      setShowReport(false); notify('Validation report submitted for Event Admin confirmation.')
+      setShowReport(false)
+      notify(isOnline ? 'Validation report submitted for Event Admin confirmation.' : 'Offline mode: Report saved locally. Will sync when back online.')
     }
     if (navigator.geolocation) navigator.geolocation.getCurrentPosition((position) => save(`${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`), () => save('GPS unavailable'))
     else save('GPS unavailable')
@@ -122,7 +147,34 @@ export function GroundCrewPage() {
   }
 
   return <div className="mobile-shell admin-fade">
-    <header className="app-header"><div><p className="eyebrow">Lumière Operations</p><div className="brand-mark">GROUND CREW</div></div><button className="avatar" onClick={() => setTab('account')} aria-label="Open account">{(adminName || 'GC').slice(0, 2).toUpperCase()}</button></header>
+    <header className="app-header">
+      <div>
+        <p className="eyebrow flex items-center gap-1.5">
+          <span>Lumière Operations</span>
+          {!isOnline ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/20 px-1.5 py-0.5 text-[0.55rem] font-bold uppercase text-rose-300">
+              <WifiOff className="size-2.5" /> Offline
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[0.55rem] font-bold uppercase text-emerald-400">
+              <Wifi className="size-2.5" /> Online
+            </span>
+          )}
+          {pendingSyncCount > 0 && (
+            <button
+              type="button"
+              onClick={() => triggerOfflineReplay()}
+              className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[0.55rem] font-bold uppercase text-amber-300 hover:bg-amber-500/30 transition"
+              title="Click to sync pending offline items"
+            >
+              <RefreshCw className={cn('size-2.5', isSyncing && 'animate-spin')} /> {pendingSyncCount} queued
+            </button>
+          )}
+        </p>
+        <div className="brand-mark">GROUND CREW</div>
+      </div>
+      <button className="avatar" onClick={() => setTab('account')} aria-label="Open account">{(adminName || 'GC').slice(0, 2).toUpperCase()}</button>
+    </header>
     <main className="app-main">
       {tab === 'tasks' && <DecisionMode declarations={declarations} accessLevel={accessLevel} adminEventId={adminEventId} events={crewEvents} onEventChange={setAdminEventId} onDecision={(id, decision) => { decideGroundCrewDeclaration(id, decision, adminName || 'Event Admin'); notify(`Declaration ${decision.toLowerCase()}.`) }} />}
       {tab === 'home' && (selectedEvent ? <EventDetail event={selectedEvent} batches={dispatchStore.get(selectedEvent.id) ?? []} handoffNote={handoffNotes[selectedEvent.id] ?? ''} onHandoffNoteChange={(value) => setHandoffNote(selectedEvent.id, value)} egressError={egressError} onStartEgress={() => startEgress(selectedEvent.id)} onBack={() => { setSelectedEventId(null); setEgressError('') }} onReport={openReport} onStall={(batchId, reason) => { markBatchStalled(selectedEvent.id, batchId, reason); notify('Batch marked Stalled In Transit.') }} onResume={(batchId) => { resolveBatchStall(selectedEvent.id, batchId); notify('Transit resumed.') }} /> : <Home events={crewEvents} onOpen={(event) => setSelectedEventId(event.id)} approachingSummary={accessLevel === 'Event Admin' ? getApproachingDeclarationsSummary() : null} />)}

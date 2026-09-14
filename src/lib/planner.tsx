@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { supabase } from '@/lib/supabase'
+import { API_BASE_URL } from '@/lib/apiConfig'
 
 /* ============================================================
    Event Planner domain — pipeline portfolios, design canvases,
@@ -505,6 +506,40 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   const [concepts] = useState<QuickConcept[]>(seedConcepts)
   const [decor, setDecor] = useState<DecorElement[]>(seedDecor)
 
+  // Hydrate pipeline events from backend REST API (GET /api/events)
+  useEffect(() => {
+    let active = true
+    import('@/lib/eventsApi').then(({ fetchEventsApi }) => {
+      fetchEventsApi().then((remoteEvents) => {
+        if (!active || !remoteEvents.length) return
+        const mappedPipelineEvents: PipelineEvent[] = remoteEvents.map((pe) => ({
+          id: pe.id,
+          title: pe.title,
+          client: pe.client || 'Not available from backend yet',
+          tier: 'VIP',
+          phase: 'Concept Definition',
+          status: 'Moodboard Phase',
+          date: pe.targetDate,
+          venue: pe.venue,
+          recordId: pe.refId,
+          galaDate: pe.targetDate,
+          daysRemaining: 120,
+          footprint: 'Pending survey',
+          attendance: 'Pending confirmation',
+          pipelineStage: 'Ideation Phase',
+        }))
+        setEvents((prev) => {
+          const existingIds = new Set(prev.map((e) => e.id))
+          const newRemote = mappedPipelineEvents.filter((e) => !existingIds.has(e.id))
+          return [...newRemote, ...prev]
+        })
+      })
+    })
+    return () => {
+      active = false
+    }
+  }, [])
+
   // Hydrate the décor library with assets registered by the Warehouse Supervisor
   // so newly stocked items appear in the canvas side panel.
   useEffect(() => {
@@ -550,25 +585,51 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   const addPortfolio = useCallback((draft: NewPortfolioDraft) => {
     const id = `pe-${Date.now()}`
     const seq = 67 + Math.floor(Math.random() * 30)
-    setEvents((prev) => [
-      {
-        id,
+    const newEvent: PipelineEvent = {
+      id,
+      title: draft.title,
+      client: draft.client,
+      tier: draft.tier,
+      phase: 'Concept Definition',
+      status: phaseStatusByPhase['Concept Definition'],
+      date: draft.date || 'TBD',
+      venue: draft.venue || 'Venue pending assignment',
+      recordId: `EVT-2026-${String(seq).padStart(4, '0')}`,
+      galaDate: draft.date || 'TBD',
+      daysRemaining: 120,
+      footprint: 'Pending survey',
+      attendance: 'Pending confirmation',
+      pipelineStage: 'Ideation Phase',
+    }
+
+    setEvents((prev) => [newEvent, ...prev])
+
+    // Asynchronously dispatch event creation to API
+    const token = typeof window !== 'undefined' ? localStorage.getItem('_lumiere_auth_token') : null
+    fetch(`${API_BASE_URL}/api/events`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
         title: draft.title,
         client: draft.client,
         tier: draft.tier,
-        phase: 'Concept Definition',
-        status: phaseStatusByPhase['Concept Definition'],
-        date: draft.date || 'TBD',
-        venue: draft.venue || 'Venue pending assignment',
-        recordId: `EVT-2026-${String(seq).padStart(4, '0')}`,
-        galaDate: draft.date || 'TBD',
-        daysRemaining: 120,
-        footprint: 'Pending survey',
-        attendance: 'Pending confirmation',
-        pipelineStage: 'Ideation Phase',
-      },
-      ...prev,
-    ])
+        date: draft.date,
+        venue: draft.venue,
+        transitBufferDays: draft.tier === 'VIP' ? 3 : 1,
+      }),
+    })
+      .then(async (res) => {
+        if (res.ok) {
+          const created = await res.json()
+          if (created && created.id) {
+            setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, id: created.id } : e)))
+          }
+        }
+      })
+      .catch((err) => console.warn('[planner] POST /api/events skipped/failed:', err))
   }, [])
 
   const selectEvent = useCallback((id: string | null) => setSelectedEventId(id), [])

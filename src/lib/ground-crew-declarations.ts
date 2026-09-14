@@ -61,8 +61,36 @@ export function useGroundCrewDeclarations() {
 }
 
 export function submitGroundCrewDeclaration(input: Omit<GroundCrewDeclaration, 'id' | 'status' | 'decisionAt' | 'decisionBy'>) {
-  declarations = [{ ...input, id: `decl-${Date.now()}`, status: 'Pending Event Admin' }, ...declarations]
+  const newDecl: GroundCrewDeclaration = { ...input, id: `decl-${Date.now()}`, status: 'Pending Event Admin' }
+  declarations = [newDecl, ...declarations]
   emit()
+
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    // Offline: Enqueue to IndexedDB for automatic background replay on reconnect
+    import('./offlineQueue').then(({ enqueueDeclaration }) => {
+      enqueueDeclaration({
+        eventName: input.eventName,
+        item: input.item,
+        condition: input.condition,
+        quantity: input.quantity,
+        description: input.description,
+        submittedBy: input.submittedBy,
+      }).catch((err) => console.warn('[ground-crew-declarations] Failed to enqueue offline declaration:', err))
+    })
+  } else {
+    // Online: Post directly to backend API endpoint
+    import('./damageApi').then(({ createDamageReport }) => {
+      createDamageReport({
+        boundEvent: input.eventName,
+        assetName: input.item,
+        damageType: input.condition === 'Damaged' ? 'Critical' : 'Missing',
+        notes: input.description,
+        reportingOfficer: input.submittedBy,
+      }).catch((err) => {
+        console.warn('[ground-crew-declarations] Backend damage report submit skipped/failed:', err)
+      })
+    })
+  }
 }
 
 export function decideGroundCrewDeclaration(id: string, decision: 'Confirmed' | 'Rejected', decisionBy: string) {

@@ -40,6 +40,8 @@ import {
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
 import { useNav } from '@/lib/nav'
+import { usePortal } from '@/lib/store'
+import { fetchEventsApi } from '@/lib/eventsApi'
 import { NotificationsBell, type NotificationEntry } from '@/components/NotificationsBell'
 import { useDarkMode, useThemeMode } from '@/lib/theme'
 
@@ -939,12 +941,56 @@ export function DesignCanvasHubPage() {
   const { navigate } = useNav()
   const { dark, toggle: toggleDark } = useDarkMode()
   const [profileOpen, setProfileOpen] = useState(false)
+  const { events: portalEvents } = usePortal()
+
+  useEffect(() => {
+    fetchEventsApi().catch(() => {})
+  }, [])
 
   /* ── Calendar state ── */
   const today = new Date()
   const [calYear, setCalYear] = useState(today.getFullYear())
   const [calMonth, setCalMonth] = useState(today.getMonth())
-  const calEvents = buildDemoEvents(calYear, calMonth)
+
+  // Map real backend events into calendar grid events for visible month/year
+  const calEvents = useMemo(() => {
+    if (portalEvents && portalEvents.length > 0) {
+      const realEventsInMonth: CalendarEvent[] = portalEvents
+        .map((ev, index) => {
+          const d = new Date(ev.targetDate)
+          if (isNaN(d.getTime())) return null
+          const y = d.getFullYear()
+          const m = d.getMonth()
+          const day = d.getDate()
+          if (y !== calYear || m !== calMonth) return null
+
+          const eventName = ev.title || 'Untitled Event'
+          const words = eventName.trim().split(/\s+/)
+          const alias = words.map((w: string) => w[0]).join('').slice(0, 4).toUpperCase() + '-26'
+          const kinds: ShapeKind[] = ['actual', 'ingress', 'egress']
+
+          return {
+            id: `real-ev-${ev.id}`,
+            day,
+            month: m,
+            year: y,
+            name: eventName,
+            alias,
+            status: 'Ready to Present' as DesignStatus,
+            kind: kinds[index % kinds.length],
+            colorIndex: index % EVENT_PALETTE.length,
+          }
+        })
+        .filter((e): e is CalendarEvent => e !== null)
+
+      if (realEventsInMonth.length > 0) {
+        return realEventsInMonth
+      }
+    }
+
+    // Fallback to buildDemoEvents if no real events match visible month/year
+    return buildDemoEvents(calYear, calMonth)
+  }, [portalEvents, calYear, calMonth])
 
   const firstDow = new Date(calYear, calMonth, 1).getDay()
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate()
@@ -976,6 +1022,43 @@ export function DesignCanvasHubPage() {
     } catch { /* use default */ }
     return DEMO_CARDS
   })
+
+  // Combine real events as project cards with local card state
+  const effectiveCards = useMemo(() => {
+    if (!portalEvents || portalEvents.length === 0) return cards
+
+    const realCards: ProjectCard[] = portalEvents.map((ev, i) => {
+      const d = new Date(ev.targetDate)
+      const dateStr = !isNaN(d.getTime())
+        ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : 'TBD'
+      const eventName = ev.title || 'Untitled Event'
+      const words = eventName.trim().split(/\s+/)
+      const alias = words.map((w: string) => w[0]).join('').slice(0, 4).toUpperCase() + '-26'
+      const thumbnails = [
+        '/images/decor/chateau-ballroom.png',
+        '/images/decor/garden-wedding.png',
+        '/images/decor/floral-arch.png',
+        '/images/decor/minimalist-table.png',
+      ]
+
+      return {
+        id: `pc-real-${ev.id}`,
+        title: `${eventName} — Layout Canvas`,
+        type: 'Design',
+        designer: 'Event Planner',
+        collaborators: [{ name: 'Executive Team', role: 'Viewer' }],
+        eventAlias: alias,
+        eventDate: dateStr,
+        lastEdited: 'Synced from API',
+        thumbnail: thumbnails[i % thumbnails.length],
+        starred: true,
+      }
+    })
+
+    return [...realCards, ...cards.filter((c) => !realCards.some((rc) => rc.id === c.id))]
+  }, [portalEvents, cards])
+
   const [searchQuery, setSearchQuery] = useState('')
   const [designer, setDesigner] = useState('All Designers')
   const [projectType, setProjectType] = useState('All Types')
@@ -989,7 +1072,7 @@ export function DesignCanvasHubPage() {
   const [trashUndo, setTrashUndo] = useState<{ card: ProjectCard; timeoutId: any } | null>(null)
 
   // Filter cards
-  let filteredCards = [...cards]
+  let filteredCards = [...effectiveCards]
   if (searchQuery.trim()) {
     const q = searchQuery.toLowerCase().trim()
     filteredCards = filteredCards.filter((c) =>
@@ -1108,6 +1191,41 @@ export function DesignCanvasHubPage() {
 
   // Events across upcoming months, sorted chronologically (soonest first)
   const upcomingEvents = useMemo(() => {
+    if (portalEvents && portalEvents.length > 0) {
+      const realUpcoming: CalendarEvent[] = portalEvents
+        .map((ev, index) => {
+          const d = new Date(ev.targetDate)
+          if (isNaN(d.getTime())) return null
+          const y = d.getFullYear()
+          const m = d.getMonth()
+          const day = d.getDate()
+          const eventName = ev.title || 'Untitled Event'
+          const words = eventName.trim().split(/\s+/)
+          const alias = words.map((w: string) => w[0]).join('').slice(0, 4).toUpperCase() + '-26'
+          const kinds: ShapeKind[] = ['actual', 'ingress', 'egress']
+          return {
+            id: `real-up-${ev.id}`,
+            day,
+            month: m,
+            year: y,
+            name: eventName,
+            alias,
+            status: 'Ready to Present' as DesignStatus,
+            kind: kinds[index % kinds.length],
+            colorIndex: index % EVENT_PALETTE.length,
+          }
+        })
+        .filter((e): e is CalendarEvent => e !== null)
+
+      if (realUpcoming.length > 0) {
+        return realUpcoming.sort((a, b) => {
+          if (a.year !== b.year) return a.year - b.year
+          if (a.month !== b.month) return a.month - b.month
+          return a.day - b.day
+        })
+      }
+    }
+
     const all: CalendarEvent[] = []
     for (let offset = 0; offset < 4; offset++) {
       let m = calMonth + offset
@@ -1123,7 +1241,7 @@ export function DesignCanvasHubPage() {
       if (a.month !== b.month) return a.month - b.month
       return a.day - b.day
     })
-  }, [calYear, calMonth])
+  }, [portalEvents, calYear, calMonth])
 
   const groupedUpcomingEvents = useMemo(() => {
     const filtered = statusFilter === 'All'
