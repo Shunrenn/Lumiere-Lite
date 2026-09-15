@@ -24,9 +24,9 @@ interface Manifest {
 }
 
 const STATUS_META: Record<HandshakeStatus, { badge: string; dot: string }> = {
-  'Pending Verification': { badge: 'bg-amber-100 text-amber-800', dot: 'bg-amber-500' },
-  'In Transit':           { badge: 'bg-sky-100 text-sky-800',    dot: 'bg-sky-500'   },
-  'Completed':            { badge: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
+  'Pending Verification': { badge: 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 dark:border dark:border-amber-800/60', dot: 'bg-amber-500' },
+  'In Transit':           { badge: 'bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300 dark:border dark:border-sky-800/60',    dot: 'bg-sky-500'   },
+  'Completed':            { badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-800/60', dot: 'bg-emerald-500' },
 }
 
 type Filter = 'All Active' | HandshakeStatus

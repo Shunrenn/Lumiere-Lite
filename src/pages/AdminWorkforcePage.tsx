@@ -153,7 +153,7 @@ export function AdminWorkforcePage() {
 
   return (
     <AdminShell activeId="workforce" onSelect={destination} stickyHeader={
-      <div><p className="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Admin Console / Directory</p><h1 className="mt-2 font-serif text-3xl font-medium text-foreground sm:text-4xl">Workforce Management</h1><p className="mt-1.5 text-sm text-muted-foreground">Manage portal accounts and employee records across Lumière.</p></div>
+      <div><p className="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Admin Console / Directory</p><h1 className="mt-2 font-serif text-2xl sm:text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">Workforce Management</h1><p className="mt-1.5 text-sm text-muted-foreground">Manage portal accounts and employee records across Lumière.</p></div>
     }>
       {isError ? (
         <ErrorFallback
@@ -169,9 +169,9 @@ export function AdminWorkforcePage() {
           <div className="relative min-w-0 flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name, ID, or email" className="w-full rounded-md border border-input bg-background py-2.5 pl-9 pr-3 text-sm text-foreground outline-none focus:border-primary" /></div>
           <div className="flex flex-wrap items-center gap-2">
             <select value={role} onChange={(e) => setRole(e.target.value)} className="rounded-md border border-input bg-background px-3 py-2.5 text-xs text-foreground"><option>All Roles</option>{roles.map((r) => <option key={r}>{r}</option>)}</select>
-            <button type="button" onClick={openGrowthSummary} className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2.5 text-xs font-semibold text-foreground transition hover:bg-muted"><TrendingUp className="size-3.5 text-primary" /> User Growth Summary</button>
+            <button type="button" onClick={openGrowthSummary} className="button-secondary"><TrendingUp className="size-3.5 text-primary" /> User Growth Summary</button>
             <div className="relative" ref={addMenuRef}>
-              <button type="button" onClick={() => setAddMenuOpen((v) => !v)} className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2.5 text-xs font-semibold text-primary-foreground hover:opacity-90" aria-haspopup="menu" aria-expanded={addMenuOpen}><Plus className="size-3.5" /> Add New User <ChevronDown className="size-3.5" /></button>
+              <button type="button" onClick={() => setAddMenuOpen((v) => !v)} className="button-primary" aria-haspopup="menu" aria-expanded={addMenuOpen}><Plus className="size-3.5" /> Add New User <ChevronDown className="size-3.5" /></button>
               {addMenuOpen && (
                 <div role="menu" className="absolute right-0 top-11 z-30 w-56 overflow-hidden rounded-lg border border-border bg-popover py-1 shadow-xl">
                   <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); setCreateAccountOpen(true) }} className="flex w-full items-start gap-2.5 px-3 py-2.5 text-left transition hover:bg-muted"><UserPlus className="mt-0.5 size-4 text-primary" /><span><span className="block text-xs font-semibold text-popover-foreground">Full Account</span><span className="block text-[0.65rem] text-muted-foreground">Portal login with credentials</span></span></button>

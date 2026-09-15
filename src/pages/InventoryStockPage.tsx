@@ -34,12 +34,12 @@ function toDecorCategory(warehouseCategory: string): string {
 }
 
 const statusMeta: Record<StockStatus, { badge: string; dot: string; bar: string }> = {
-  Available: { badge: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500', bar: 'bg-emerald-600' },
-  'Low Stock': { badge: 'bg-amber-100 text-amber-800', dot: 'bg-amber-500', bar: 'bg-amber-500' },
-  'Critical Deficit': { badge: 'bg-rose-100 text-rose-700', dot: 'bg-rose-500', bar: 'bg-destructive' },
-  'Order Placed': { badge: 'bg-sky-100 text-sky-700', dot: 'bg-sky-500', bar: 'bg-sky-500' },
+  Available: { badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-800/60', dot: 'bg-emerald-500', bar: 'bg-emerald-600 dark:bg-emerald-500' },
+  'Low Stock': { badge: 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 dark:border dark:border-amber-800/60', dot: 'bg-amber-500', bar: 'bg-amber-500' },
+  'Critical Deficit': { badge: 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 dark:border dark:border-rose-800/60', dot: 'bg-rose-500', bar: 'bg-destructive' },
+  'Order Placed': { badge: 'bg-sky-100 text-sky-700 dark:bg-sky-950/80 dark:text-sky-300 dark:border dark:border-sky-800/60', dot: 'bg-sky-500', bar: 'bg-sky-500' },
   Depleted: { badge: 'bg-muted text-muted-foreground', dot: 'bg-muted-foreground', bar: 'bg-muted-foreground' },
-  'In Maintenance': { badge: 'bg-indigo-100 text-indigo-700', dot: 'bg-indigo-500', bar: 'bg-indigo-500' },
+  'In Maintenance': { badge: 'bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-200 dark:border dark:border-amber-800/60', dot: 'bg-amber-500', bar: 'bg-amber-500' },
 }
 
 const FILTER_STATES: StockStatus[] = [
@@ -213,7 +213,7 @@ export function InventoryStockPage() {
             <button
               type="button"
               onClick={() => setIsAddModalOpen(true)}
-              className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md bg-primary px-5 py-2.5 text-[0.65rem] font-bold uppercase tracking-[0.12em] text-primary-foreground transition hover:opacity-90"
+              className="button-primary shrink-0 whitespace-nowrap"
             >
               <Plus className="size-3.5" />
               Add New Item
@@ -537,7 +537,7 @@ export function InventoryStockPage() {
               <button
                 type="button"
                 onClick={() => setMaintenanceConfirmAsset(null)}
-                className="rounded-md border border-border px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-muted"
+                className="button-secondary"
               >
                 Cancel
               </button>
@@ -548,7 +548,7 @@ export function InventoryStockPage() {
                   setMaintenanceConfirmAsset(null)
                   setSelectedAsset(null)
                 }}
-                className="rounded-md bg-indigo-600 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-indigo-700"
+                className="button-primary"
               >
                 Complete Maintenance
               </button>

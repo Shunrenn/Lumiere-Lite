@@ -8,9 +8,9 @@ import { CREW, type CrewStatus } from '@/lib/roster'
 import { cn } from '@/lib/utils'
 
 const statusMeta: Record<CrewStatus, { badge: string; dot: string }> = {
-  Available: { badge: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
-  Assigned: { badge: 'bg-amber-100 text-amber-800', dot: 'bg-amber-500' },
-  'On Leave': { badge: 'bg-rose-100 text-rose-700', dot: 'bg-rose-400' },
+  Available: { badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-800/60', dot: 'bg-emerald-500' },
+  Assigned: { badge: 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 dark:border dark:border-amber-800/60', dot: 'bg-amber-500' },
+  'On Leave': { badge: 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 dark:border dark:border-rose-800/60', dot: 'bg-rose-400' },
 }
 
 interface Stat {

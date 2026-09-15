@@ -226,7 +226,7 @@ export function ActivityLogsPage() {
               </tr>
             ) : (
               filtered.map((l) => (
-                <tr key={l.id} className="border-t border-border/60 align-top">
+                <tr key={l.id} className="border-t border-border/60 align-middle">
                   <td className="px-4 py-4 text-[0.65rem] text-muted-foreground">
                     <p className="font-semibold text-card-foreground">{l.timestamp}</p>
                     <p>{l.date}</p>
@@ -252,7 +252,7 @@ export function ActivityLogsPage() {
                     </p>
                   </td>
                   <td className="px-4 py-4">
-                    <span className="inline-block rounded-full bg-emerald-100 px-2.5 py-1 text-[0.55rem] font-bold uppercase tracking-[0.1em] text-emerald-700">
+                    <span className="inline-block rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-800/60 px-2.5 py-1 text-[0.55rem] font-bold uppercase tracking-[0.1em]">
                       {l.status || 'Success'}
                     </span>
                   </td>

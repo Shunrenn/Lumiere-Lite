@@ -153,7 +153,7 @@ export function AdminSystemDashboardPage() {
   const stickyHeader = isDashboard ? (
     <div>
       <div>
-        <h1 className="font-serif text-3xl font-medium leading-tight text-foreground sm:text-4xl">
+        <h1 className="font-serif text-2xl sm:text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
           System Dashboard
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
@@ -162,7 +162,7 @@ export function AdminSystemDashboardPage() {
       </div>
     </div>
   ) : (
-    <h1 className="font-serif text-3xl font-medium leading-tight text-foreground">
+    <h1 className="font-serif text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
       {getAdminDestination(activeId)?.label}
     </h1>
   )

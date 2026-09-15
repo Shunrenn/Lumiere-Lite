@@ -17,9 +17,9 @@ type Filter = 'All' | DeficitStatus
 const FILTERS: Filter[] = ['All', 'Not Purchased', 'In Procurement', 'Received']
 
 const statusStyles: Record<DeficitStatus, { badge: string; bar: string }> = {
-  'Not Purchased': { badge: 'bg-rose-100 text-rose-700', bar: 'bg-destructive' },
-  'In Procurement': { badge: 'bg-amber-100 text-amber-800', bar: 'bg-amber-500' },
-  Received: { badge: 'bg-emerald-100 text-emerald-700', bar: 'bg-emerald-600' },
+  'Not Purchased': { badge: 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 dark:border dark:border-rose-800/60', bar: 'bg-destructive' },
+  'In Procurement': { badge: 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 dark:border dark:border-amber-800/60', bar: 'bg-amber-500' },
+  Received: { badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-800/60', bar: 'bg-emerald-600 dark:bg-emerald-500' },
 }
 
 interface Kpi {

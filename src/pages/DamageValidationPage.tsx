@@ -16,11 +16,11 @@ import { API_BASE_URL } from '@/lib/apiConfig'
 
 const statusStyles: Record<DamageVerdict, string> = {
   'Pending Verdict': 'border border-primary/40 bg-primary/10 text-primary',
-  Validated: 'bg-emerald-100 text-emerald-700',
+  Validated: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-800/60',
   Dismissed: 'bg-muted text-muted-foreground',
-  'Held for Audit': 'bg-amber-100 text-amber-800',
-  'Pending Second Sign-off': 'bg-amber-100 text-amber-800',
-  Repair: 'bg-sky-100 text-sky-700',
+  'Held for Audit': 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 dark:border dark:border-amber-800/60',
+  'Pending Second Sign-off': 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 dark:border dark:border-amber-800/60',
+  Repair: 'bg-sky-100 text-sky-700 dark:bg-sky-950/80 dark:text-sky-300 dark:border dark:border-sky-800/60',
   'Write-off': 'bg-muted text-muted-foreground',
 }
 

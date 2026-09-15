@@ -56,6 +56,7 @@ body { overflow-x: hidden; overscroll-behavior-x: none; }
 .button-secondary { border:1px solid var(--border); background:transparent; color:var(--foreground); }
 .status { display:inline-flex; white-space:nowrap; padding:4px 7px; border-radius:999px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; background:var(--secondary); }
 .status-submitted { background:#ead8b5; color:#704c23; } .status-approved { background:#dce8d9; color:#3e623d; } .status-rejected { background:#f0d9d3; color:#8e3e32; } .status-in-progress { background:#e6e0ce; color:#675b2f; } .status-neutral { background:var(--secondary); color:var(--muted-foreground); }
+.dark .status-submitted { background:#4a361e; color:#f3d4a0; } .dark .status-approved { background:#224222; color:#b4e3b3; } .dark .status-rejected { background:#52221b; color:#f8bebe; } .dark .status-in-progress { background:#443c1d; color:#e9db9f; } .dark .status-neutral { background:var(--secondary); color:var(--muted-foreground); }
 .field-label { display:flex; flex-direction:column; gap:8px; margin-top:20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; }
 .field-input { width:100%; border:1px solid var(--border); background:var(--card); border-radius:4px; padding:11px 12px; outline:none; text-transform:none; letter-spacing:normal; font-weight:400; }
 .field-input:focus { border-color:var(--primary); }

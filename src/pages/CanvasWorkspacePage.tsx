@@ -2127,15 +2127,15 @@ function DeficitModal({ asset, requested, unit, deficit, onClose, onAccept, onBa
                       className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-semibold text-foreground outline-none focus:border-primary transition" />
                   </div>
                   <button type="button" onClick={() => setConfirmReplenish(true)} disabled={!replenishQty}
-                    className="w-full rounded-xl bg-amber-600 py-2.5 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition">
+                    className="w-full rounded-xl bg-primary py-2.5 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-primary-foreground hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition">
                     Request Replenishment
                   </button>
                 </>
               ) : (
                 <>
-                  <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3">
-                    <AlertTriangle className="size-4 shrink-0 text-amber-400 mt-0.5" />
-                    <p className="text-[0.62rem] text-amber-200 leading-relaxed">Confirm this replenishment request for <span className="font-semibold">{replenishQty} {unit}</span> of {asset.name}. It will be sent to the Pending Replenishment tab for verification.</p>
+                  <div className="flex items-start gap-2.5 rounded-xl border border-primary/30 bg-primary/10 px-3 py-3">
+                    <AlertTriangle className="size-4 shrink-0 text-primary mt-0.5" />
+                    <p className="text-[0.62rem] text-foreground leading-relaxed">Confirm this replenishment request for <span className="font-semibold">{replenishQty} {unit}</span> of {asset.name}. It will be sent to the Pending Replenishment tab for verification.</p>
                   </div>
                   <div className="flex gap-2">
                     <button type="button" onClick={handleCancelReplenish}
@@ -2143,7 +2143,7 @@ function DeficitModal({ asset, requested, unit, deficit, onClose, onAccept, onBa
                       Cancel
                     </button>
                     <button type="button" onClick={() => { const gained = parseInt(replenishQty) || 0; onStrategy('replenish', asset.id, gained, unit); setStrategyDone({ path: 'replenish', gained }) }}
-                      className="flex-1 rounded-xl bg-amber-600 py-2.5 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-white hover:opacity-90 transition">
+                      className="flex-1 rounded-xl bg-primary py-2.5 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-primary-foreground hover:opacity-90 transition">
                       Request
                     </button>
                   </div>
@@ -2226,10 +2226,10 @@ function DeficitModal({ asset, requested, unit, deficit, onClose, onAccept, onBa
             ))}
           </div>
           <div className="flex flex-col gap-2">
-            <button type="button" onClick={onAccept} className="w-full rounded-xl border border-emerald-500/40 bg-emerald-500/10 py-2.5 text-[0.62rem] font-bold uppercase tracking-[0.1em] text-emerald-400 hover:bg-emerald-500/20 transition">Accept — use lower available count ({asset.availableStock} {unit})</button>
+            <button type="button" onClick={onAccept} className="w-full rounded-xl border border-primary/40 bg-primary/10 py-2.5 text-[0.62rem] font-bold uppercase tracking-[0.1em] text-primary hover:bg-primary/20 transition">Accept — use lower available count ({asset.availableStock} {unit})</button>
             <button type="button" onClick={onBack} className="w-full rounded-xl border border-border py-2.5 text-[0.62rem] font-bold uppercase tracking-[0.1em] text-muted-foreground hover:bg-accent hover:text-foreground transition">Back — return to adjustments</button>
             {asset.existingAllocations.length > 0 && <button type="button" onClick={() => { setStrategyPath('crossdock'); setStep('strategy') }} className="w-full rounded-xl border border-border bg-background py-2.5 text-[0.62rem] font-bold uppercase tracking-[0.1em] text-foreground hover:border-primary/50 transition flex items-center justify-center gap-2"><RefreshCw className="size-3.5" />Cross-Docking Exception</button>}
-            <button type="button" onClick={() => { setStrategyPath('replenish'); setStep('strategy') }} className="w-full rounded-xl bg-amber-600/90 py-2.5 text-[0.62rem] font-bold uppercase tracking-[0.1em] text-white hover:opacity-90 transition flex items-center justify-center gap-2"><Plus className="size-3.5" />Add More / Request Replenishment</button>
+            <button type="button" onClick={() => { setStrategyPath('replenish'); setStep('strategy') }} className="w-full rounded-xl bg-primary py-2.5 text-[0.62rem] font-bold uppercase tracking-[0.1em] text-primary-foreground hover:opacity-90 transition flex items-center justify-center gap-2"><Plus className="size-3.5" />Add More / Request Replenishment</button>
           </div>
         </div>
       </div>
@@ -2252,7 +2252,7 @@ function VerifyReplenishmentModal({ item, onClose, onVerify }: { item: PendingRe
           <div className="rounded-xl border border-border bg-background px-4 py-3 flex flex-col gap-2">
             <div className="flex justify-between text-[0.62rem]"><span className="text-muted-foreground">Item</span><span className="font-semibold text-foreground">{item.name}</span></div>
             <div className="flex justify-between text-[0.62rem]"><span className="text-muted-foreground">Event</span><span className="font-semibold text-foreground truncate max-w-[55%] text-right">{item.event}</span></div>
-            <div className="flex justify-between text-[0.62rem]"><span className="text-muted-foreground">Requested</span><span className="font-semibold text-amber-400">{item.requestedQty} {item.unit}</span></div>
+            <div className="flex justify-between text-[0.62rem]"><span className="text-muted-foreground">Requested</span><span className="font-semibold text-primary">{item.requestedQty} {item.unit}</span></div>
           </div>
           <div>
             <label className="mb-1 block text-[0.58rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">Adjust Quantity</label>
@@ -2261,7 +2261,7 @@ function VerifyReplenishmentModal({ item, onClose, onVerify }: { item: PendingRe
           </div>
           <div className="flex gap-2">
             <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-border py-2 text-[0.6rem] font-bold uppercase tracking-[0.1em] text-muted-foreground hover:bg-accent transition">Cancel</button>
-            <button type="button" onClick={() => { const approved = Math.max(0, Number(adjustedQty) || 0); if (approved > 0) { onVerify(item, approved); onClose() } }} className="flex-1 rounded-xl bg-emerald-600 py-2 text-[0.6rem] font-bold uppercase tracking-[0.1em] text-white hover:opacity-90 transition">Verify / Approve</button>
+            <button type="button" onClick={() => { const approved = Math.max(0, Number(adjustedQty) || 0); if (approved > 0) { onVerify(item, approved); onClose() } }} className="flex-1 rounded-xl bg-primary py-2 text-[0.6rem] font-bold uppercase tracking-[0.1em] text-primary-foreground hover:opacity-90 transition">Verify / Approve</button>
           </div>
         </div>
       </div>

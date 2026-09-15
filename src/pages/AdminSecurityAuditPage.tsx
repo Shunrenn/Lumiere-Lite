@@ -456,7 +456,7 @@ export function AdminSecurityAuditPage() {
                       <tr
                         onClick={() => setExpanded(open ? null : entry.id)}
                         className={cn(
-                          'cursor-pointer border-t border-border/60 align-top transition-colors hover:bg-muted/40',
+                          'cursor-pointer border-t border-border/60 align-middle transition-colors hover:bg-muted/40',
                           open && 'bg-muted/40',
                         )}
                         aria-expanded={open}
