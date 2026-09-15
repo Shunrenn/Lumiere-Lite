@@ -44,6 +44,8 @@ import { usePortal } from '@/lib/store'
 import { fetchEventsApi } from '@/lib/eventsApi'
 import { NotificationsBell, type NotificationEntry } from '@/components/NotificationsBell'
 import { useDarkMode, useThemeMode } from '@/lib/theme'
+import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+import { ErrorFallback } from '@/components/ErrorFallback'
 
 
 /* ─── Calendar helpers ─── */
@@ -1078,6 +1080,8 @@ export function DesignCanvasHubPage() {
   const { dark, toggle: toggleDark } = useDarkMode()
   const [profileOpen, setProfileOpen] = useState(false)
   const { events: portalEvents } = usePortal()
+  const [isLoading] = useState(false)
+  const [isError, setIsError] = useState(false)
 
   useEffect(() => {
     fetchEventsApi().catch(() => {})
@@ -1452,8 +1456,13 @@ export function DesignCanvasHubPage() {
       </header>
 
       <main className="flex-1 overflow-y-auto px-6 py-5 lg:px-10">
-
-        {/* ── Calendar + Needs Editing ── */}
+        {isError ? (
+          <ErrorFallback title="Design Canvas Hub Unavailable" message="Could not fetch design projects & calendar assignments." onRetry={() => setIsError(false)} />
+        ) : isLoading ? (
+          <LoadingSkeleton variant="cards" />
+        ) : (
+          <>
+            {/* ── Calendar + Needs Editing ── */}
         <section aria-label="Design calendar" className="mb-5 grid grid-cols-1 gap-6 lg:grid-cols-[7fr_3fr]">
           {/* Calendar (primary column) */}
           <div className="w-full h-[32rem] flex flex-col rounded-xl border border-border bg-card p-5 shadow-sm">
@@ -1761,6 +1770,8 @@ export function DesignCanvasHubPage() {
                 </div>
           )}
         </section>
+        </>
+        )}
       </main>
 
       {profileOpen && (

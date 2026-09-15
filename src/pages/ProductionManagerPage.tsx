@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Bell, Camera, CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, FileText, Hammer, Lock, UserCircle2, Undo2, X } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useWarehouse, PRODUCTION_NOTIFICATIONS, type ProductionJob, type ProductionStage, type WarehouseEvent } from '@/lib/warehouse'
+import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+import { ErrorFallback } from '@/components/ErrorFallback'
 
 type Tab = 'home' | 'calendar' | 'activity' | 'account'
 
@@ -34,9 +36,38 @@ export function ProductionManagerPage() {
   const pendingCount = productionJobs.filter((j) => j.stage === 'Awaiting Approval').length
   const activeJob = openJob ? productionJobs.find((j) => j.id === openJob.id) ?? openJob : null
 
+  const [isLoading, setIsLoading] = useState(true)
+  const [isError, setIsError] = useState(false)
+
+  const handleRefetch = async () => {
+    setIsError(false)
+    setIsLoading(true)
+    try {
+      await new Promise((r) => setTimeout(r, 200))
+    } catch {
+      setIsError(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    handleRefetch()
+  }, [])
+
   return <div className="mobile-shell admin-fade">
     <header className="app-header"><div><p className="eyebrow">Lumière Operations</p><div className="brand-mark">PRODUCTION</div></div><button className="avatar" onClick={() => setTab('account')} aria-label="Open account">{(adminName || 'PM').slice(0, 2).toUpperCase()}</button></header>
     <main className="app-main">
+      {isError ? (
+        <ErrorFallback
+          title="Production Management Unavailable"
+          message="Could not load production prep jobs and queue status."
+          onRetry={handleRefetch}
+        />
+      ) : isLoading ? (
+        <LoadingSkeleton variant="dashboard" />
+      ) : (
+        <>
       {tab === 'home' && (selectedEvent ? (
         <EventJobs event={selectedEvent} jobs={productionJobs.filter((j) => j.eventId === selectedEvent.id)} onBack={() => setSelectedEvent(null)} onOpen={setOpenJob} />
       ) : (
@@ -45,6 +76,8 @@ export function ProductionManagerPage() {
       {tab === 'calendar' && <CalendarView selectedDate={selectedDate} setSelectedDate={setSelectedDate} notes={notes} setNotes={setNotes} onSave={() => notify('Personal note saved.')} jobs={productionJobs} events={events} />}
       {tab === 'activity' && <Activity activity={activity} jobs={productionJobs} />}
       {tab === 'account' && <Account name={adminName || 'Production Manager'} email={adminEmail || 'production@lumiere.com'} onLogout={logout} />}
+        </>
+      )}
     </main>
     <nav className="bottom-nav" aria-label="Production navigation">{([['home', 'Home', ClipboardList], ['calendar', 'Calendar', CalendarDays], ['activity', 'Activity', FileText], ['account', 'Account', UserCircle2]] as const).map(([key, label, Icon]) => <button key={key} onClick={() => { setTab(key); setSelectedEvent(null) }} className={tab === key ? 'active' : ''}><Icon className="size-5" /><span>{label}</span></button>)}</nav>
     {toast && <div className="fixed bottom-24 left-1/2 z-40 w-[calc(100%-32px)] max-w-[528px] -translate-x-1/2 rounded-md bg-primary px-4 py-3 text-center text-sm text-primary-foreground shadow-lg">{toast}</div>}

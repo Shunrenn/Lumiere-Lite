@@ -4,6 +4,7 @@ import type { AccountStatus, Staff } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { RoleBadge, StatusBadge } from './WorkforceBadges'
 import { CompactStatStrip } from '@/components/CompactStatStrip'
+import { EmptyState } from '@/components/EmptyState'
 
 interface Props {
   rows: Staff[]
@@ -88,7 +89,17 @@ export function WorkforceTable({
             </tr>
           </thead>
           <tbody>
-            {rows.map((s) => {
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="py-8">
+                  <EmptyState
+                    title="No workforce records found"
+                    message="No staff accounts or employee records match your search query or role/status filters."
+                  />
+                </td>
+              </tr>
+            ) : (
+              rows.map((s) => {
               const status = resolveStatus(s)
               const isRecord = s.recordKind === 'employee-record'
               const suspended = status === 'Suspended'
@@ -197,7 +208,8 @@ export function WorkforceTable({
                   </td>
                 </tr>
               )
-            })}
+            })
+            )}
           </tbody>
         </table>
       </div>

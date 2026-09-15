@@ -5,6 +5,8 @@ import { VerifyHandoffModal } from '@/components/VerifyHandoffModal'
 import { ManifestDetailModal } from '@/components/ManifestDetailModal'
 import { cn } from '@/lib/utils'
 import { usePortal } from '@/lib/store'
+import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+import { ErrorFallback } from '@/components/ErrorFallback'
 
 type HandshakeStatus = 'Pending Verification' | 'In Transit' | 'Completed'
 
@@ -137,22 +139,31 @@ export function DispatchManifestPage() {
     )
   }
 
+  const [isLoading] = useState(false)
+  const [isError, setIsError] = useState(false)
+
   return (
     <ConsoleLayout>
-      {/* Header */}
-      <div className="mt-4 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div>
-          <p className="text-[0.58rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            Warehouse · Dispatch Records
-          </p>
-          <h1 className="mt-1 font-serif text-3xl font-medium tracking-tight text-foreground lg:text-4xl">
-            Automated Asset Allocation &amp; Handshake
-          </h1>
-          <p className="mt-2 max-w-xl text-xs italic text-muted-foreground">
-            Real-time deployment manifest showing auto-allocated events, tasks, and asset custody
-            verification between warehouse logistics and on-site field leads.
-          </p>
-        </div>
+      {isError ? (
+        <ErrorFallback title="Dispatch Manifests Unavailable" message="Could not fetch vehicle dispatch manifests." onRetry={() => setIsError(false)} />
+      ) : isLoading ? (
+        <LoadingSkeleton variant="table" />
+      ) : (
+        <>
+          {/* Header */}
+          <div className="mt-4 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <div>
+              <p className="text-[0.58rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                Warehouse · Dispatch Records
+              </p>
+              <h1 className="mt-1 font-serif text-3xl font-medium tracking-tight text-foreground lg:text-4xl">
+                Automated Asset Allocation &amp; Handshake
+              </h1>
+              <p className="mt-2 max-w-xl text-xs italic text-muted-foreground">
+                Real-time deployment manifest showing auto-allocated events, tasks, and asset custody
+                verification between warehouse logistics and on-site field leads.
+              </p>
+            </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -319,6 +330,8 @@ export function DispatchManifestPage() {
           </p>
         </div>
       </div>
+      </>
+      )}
 
       {/* Modals */}
       <VerifyHandoffModal

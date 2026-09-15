@@ -2,6 +2,8 @@ import { Fragment, useEffect, useState } from 'react'
 import { ChevronDown, Folder, FolderOpen, Lock, Plus, ShieldCheck, Trash2, UserRound } from 'lucide-react'
 import { AdminShell } from '@/components/admin/AdminShell'
 import { MaskedPinInput } from '@/components/admin/MaskedPinInput'
+import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+import { ErrorFallback } from '@/components/ErrorFallback'
 import { useNav } from '@/lib/nav'
 import { useAuth } from '@/lib/auth'
 import { usePortal } from '@/lib/store'
@@ -597,9 +599,38 @@ export function AdminRolesPage() {
     </div>
   )
 
+  const [isLoading, setIsLoading] = useState(true)
+  const [isError, setIsError] = useState(false)
+
+  const handleRefetch = async () => {
+    setIsError(false)
+    setIsLoading(true)
+    try {
+      await new Promise((r) => setTimeout(r, 200))
+    } catch {
+      setIsError(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    handleRefetch()
+  }, [])
+
   return (
     <AdminShell activeId="rbac" onSelect={railSelect} stickyHeader={stickyHeader}>
-      <div className="mb-8 flex flex-col gap-5">
+      {isError ? (
+        <ErrorFallback
+          title="Role Permissions Management Unavailable"
+          message="Could not load sub-role RBAC permission matrix."
+          onRetry={handleRefetch}
+        />
+      ) : isLoading ? (
+        <LoadingSkeleton variant="detail" />
+      ) : (
+        <>
+          <div className="mb-8 flex flex-col gap-5">
         <div className="flex flex-wrap items-center gap-2">
           <span className="mr-1 text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             Legend
@@ -880,6 +911,8 @@ export function AdminRolesPage() {
           </div>
         </section>
       </div>
+        </>
+      )}
 
       {ackAction && (
         <AckConfirmModal action={ackAction} onCancel={() => setAckAction(null)} onConfirm={confirmAck} />

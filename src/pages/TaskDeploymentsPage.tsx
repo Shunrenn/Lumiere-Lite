@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Search, Plus, MapPin, Briefcase } from 'lucide-react'
 import { ConsoleLayout } from '@/components/ConsoleLayout'
 import { DeployTaskForceModal } from '@/components/DeployTaskForceModal'
 import { DeploymentDetailModal } from '@/components/DeploymentDetailModal'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+import { ErrorFallback } from '@/components/ErrorFallback'
 import { cn } from '@/lib/utils'
 import { addDeployment, updateDeployment, useDeployments } from '@/lib/deployments'
 import { usePortal } from '@/lib/store'
@@ -135,8 +137,37 @@ export function TaskDeploymentsPage() {
     setArchiveTarget(null)
   }
 
+  const [isLoading, setIsLoading] = useState(true)
+  const [isError, setIsError] = useState(false)
+
+  const handleRefetch = async () => {
+    setIsError(false)
+    setIsLoading(true)
+    try {
+      await new Promise((r) => setTimeout(r, 200))
+    } catch {
+      setIsError(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    handleRefetch()
+  }, [])
+
   return (
     <ConsoleLayout>
+      {isError ? (
+        <ErrorFallback
+          title="Deployments Registry Unavailable"
+          message="Could not load task force deployments."
+          onRetry={handleRefetch}
+        />
+      ) : isLoading ? (
+        <LoadingSkeleton variant="table" />
+      ) : (
+        <>
       <div className="mt-4 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <p className="text-[0.58rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
@@ -324,6 +355,8 @@ export function TaskDeploymentsPage() {
           </table>
         </div>
       </div>
+        </>
+      )}
 
       <DeployTaskForceModal
         isOpen={deployOpen}

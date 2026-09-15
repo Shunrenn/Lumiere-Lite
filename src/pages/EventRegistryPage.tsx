@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Search, MoreVertical } from 'lucide-react'
 import { ExecutiveShell } from '@/components/executive/ExecutiveShell'
 import { RegisterEventDrawer } from '@/components/RegisterEventDrawer'
+import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+import { ErrorFallback } from '@/components/ErrorFallback'
+import { EmptyState } from '@/components/EmptyState'
 import { usePortal } from '@/lib/store'
 import { useAuth } from '@/lib/auth'
 import { useNav } from '@/lib/nav'
@@ -131,9 +134,38 @@ export function EventRegistryPage() {
     </div>
   )
 
+  const [isLoading, setIsLoading] = useState(true)
+  const [isError, setIsError] = useState(false)
+
+  const handleRefetch = async () => {
+    setIsError(false)
+    setIsLoading(true)
+    try {
+      await new Promise((r) => setTimeout(r, 200))
+    } catch {
+      setIsError(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    handleRefetch()
+  }, [])
+
   return (
     <ExecutiveShell activeId="registry" onSelect={destination} stickyHeader={stickyHeader}>
-      {/* Operational Progress — dispatch readiness per active event */}
+      {isError ? (
+        <ErrorFallback
+          title="Event Operations Registry Unavailable"
+          message="Could not load event portfolio registry records."
+          onRetry={handleRefetch}
+        />
+      ) : isLoading ? (
+        <LoadingSkeleton variant="table" />
+      ) : (
+        <>
+          {/* Operational Progress — dispatch readiness per active event */}
       <div className="mt-7 rounded-xl border border-border bg-card p-5">
         <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-foreground">
           Operational Progress
@@ -248,8 +280,11 @@ export function EventRegistryPage() {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-16 text-center text-xs text-muted-foreground">
-                  No events registered yet.
+                <td colSpan={9} className="py-8">
+                  <EmptyState
+                    title="No events found"
+                    message="No registered events match your search query or status filters."
+                  />
                 </td>
               </tr>
             ) : (
@@ -322,6 +357,8 @@ export function EventRegistryPage() {
         </table>
         </div>
       </div>
+      </>
+      )}
 
       <RegisterEventDrawer
         open={drawerOpen}

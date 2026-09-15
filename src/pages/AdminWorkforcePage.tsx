@@ -9,6 +9,8 @@ import type { AdminDestinationId } from '@/lib/admin-destinations'
 import { useNav } from '@/lib/nav'
 import { usePortal } from '@/lib/store'
 import { useGrowthSummary } from '@/lib/admin-growth-summary'
+import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+import { ErrorFallback } from '@/components/ErrorFallback'
 import type { AccountStatus, Staff } from '@/lib/types'
 
 function statusFor(staff: Staff, lockedIds: Set<string>): AccountStatus {
@@ -123,6 +125,25 @@ export function AdminWorkforcePage() {
     { label: 'Pending Activations', value: pendingActivations },
   ]
 
+  const [isLoading, setIsLoading] = useState(true)
+  const [isError, setIsError] = useState(false)
+
+  const handleRefetch = async () => {
+    setIsError(false)
+    setIsLoading(true)
+    try {
+      await new Promise((r) => setTimeout(r, 200))
+    } catch {
+      setIsError(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    handleRefetch()
+  }, [])
+
   const destination = (id: AdminDestinationId) => {
     if (id === 'system-dashboard') navigate('overview')
     else if (id === 'workforce') navigate('workforce')
@@ -134,7 +155,16 @@ export function AdminWorkforcePage() {
     <AdminShell activeId="workforce" onSelect={destination} stickyHeader={
       <div><p className="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Admin Console / Directory</p><h1 className="mt-2 font-serif text-3xl font-medium text-foreground sm:text-4xl">Workforce Management</h1><p className="mt-1.5 text-sm text-muted-foreground">Manage portal accounts and employee records across Lumière.</p></div>
     }>
-      <div className="flex flex-col gap-5">
+      {isError ? (
+        <ErrorFallback
+          title="Workforce Management Unavailable"
+          message="Could not load staff directory from backend database."
+          onRetry={handleRefetch}
+        />
+      ) : isLoading ? (
+        <LoadingSkeleton variant="table" />
+      ) : (
+        <div className="flex flex-col gap-5">
         <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative min-w-0 flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name, ID, or email" className="w-full rounded-md border border-input bg-background py-2.5 pl-9 pr-3 text-sm text-foreground outline-none focus:border-primary" /></div>
           <div className="flex flex-wrap items-center gap-2">
@@ -168,6 +198,7 @@ export function AdminWorkforcePage() {
         <p className="text-xs text-muted-foreground">Showing {rows.length} of {staff.length} directory entries. Click a row to view details.</p>
         <WorkforceTable rows={rows} resolveStatus={(s) => statusFor(s, lockedIds)} onRowClick={(s) => { setSelected(s); setEditMode(false); setTempPassword(s.tempPassword ?? '') }} onSuspend={(s) => void toggleSuspend(s.id)} onForceLogout={(s) => forceLogout(s.id)} onEdit={(s) => { setSelected(s); setEditMode(true); setTempPassword(s.tempPassword ?? '') }} highlightId={highlightId} stats={tableStats} />
       </div>
+      )}
       <EmployeeModal open={createAccountOpen} onClose={() => setCreateAccountOpen(false)} />
       <EmployeeRecordModal open={createRecordOpen} onClose={() => setCreateRecordOpen(false)} onCreate={addEmployeeRecord} />
       <ViewAccountModal open={!!selected} staff={selected} tempPassword={tempPassword} onTempPasswordChange={setTempPassword} onClose={() => setSelected(null)} editable={editMode} onSave={(s) => { updateStaff({ ...s, tempPassword }); setSelected(null) }} />

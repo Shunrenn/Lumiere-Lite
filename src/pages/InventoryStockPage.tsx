@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, Plus, ChevronDown, Grid2X2, List } from 'lucide-react'
+import { Search, Plus, ChevronDown, Grid2X2, List, PackageSearch } from 'lucide-react'
 import { ConsoleLayout } from '@/components/ConsoleLayout'
 import { AddNewAssetModal } from '@/components/AddNewAssetModal'
 import { AssetInformationModal } from '@/components/AssetInformationModal'
 import { ReorderRequisitionModal } from '@/components/ReorderRequisitionModal'
+import { EmptyState } from '@/components/EmptyState'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { usePortal } from '@/lib/store'
@@ -12,6 +13,8 @@ import { useNav } from '@/lib/nav'
 import { useInventoryOps } from '@/lib/inventory-ops'
 import { CompactStatStrip } from '@/components/CompactStatStrip'
 import { GridRevealContainer } from '@/components/GridRevealContainer'
+import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+import { ErrorFallback } from '@/components/ErrorFallback'
 import type { InventoryItem, ProcurementItem, StockStatus } from '@/lib/types'
 
 // Map a warehouse inventory category onto an Event Planner décor category so a
@@ -233,10 +236,19 @@ export function InventoryStockPage() {
     </div>
   )
 
+  const [isLoading] = useState(false)
+  const [isError, setIsError] = useState(false)
+
   const bodyContent = (
     <>
-      {/* Controls row */}
-      <div className="mt-5 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+      {isError ? (
+        <ErrorFallback title="Asset Inventory Unavailable" message="Could not fetch inventory registry items." onRetry={() => setIsError(false)} />
+      ) : isLoading ? (
+        <LoadingSkeleton variant="table" />
+      ) : (
+        <>
+          {/* Controls row */}
+          <div className="mt-5 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex flex-wrap gap-3">
           {/* Category filter */}
           <div className="relative">
@@ -332,7 +344,18 @@ export function InventoryStockPage() {
 
       {/* Inventory views */}
       {filtered.length === 0 ? (
-        <div className="mt-16 text-center text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">No items available</div>
+        <EmptyState
+          title="No assets match your search"
+          message="No stock items match your search query or category/status filters."
+          icon={PackageSearch}
+          actionLabel={query || categoryFilter || stateFilter !== 'All' ? 'Clear filters' : undefined}
+          onAction={() => {
+            setQuery('')
+            setCategoryFilter('')
+            setStateFilter('All')
+          }}
+          className="mt-6 border border-dashed border-border bg-card/40 rounded-xl"
+        />
       ) : viewMode === 'grid' ? (
         <div className="mt-6">
           <GridRevealContainer maxHeightClass="max-h-[calc(100vh-320px)] min-h-[460px]">
@@ -377,6 +400,8 @@ export function InventoryStockPage() {
             <tbody>{filtered.map((item) => <tr key={item.id} className="border-t border-border/60 align-middle"><td className="px-4 py-3"><div className="size-12 overflow-hidden rounded-md bg-muted"><img src={item.image || '/placeholder.svg'} alt={item.name} className="size-full object-cover" /></div></td><td className="px-4 py-3"><p className="font-serif text-base font-medium text-card-foreground">{item.name}</p><p className="text-[0.6rem] uppercase tracking-[0.1em] text-muted-foreground">{item.assetId}</p></td><td className="px-4 py-3 text-xs text-muted-foreground">{item.category}</td><td className="px-4 py-3 text-xs text-muted-foreground"><span className="font-serif text-base text-card-foreground">{item.stock}</span> / {item.capacity}</td><td className="px-4 py-3"><StatusBadge status={item.status} /></td><td className="px-4 py-3 text-right"><div className="flex items-center justify-end gap-3">{!readOnly && (item.status === 'Critical Deficit' || item.status === 'Low Stock') && <button type="button" onClick={() => openReorder(item)} className="text-[0.6rem] font-bold uppercase tracking-[0.1em] text-rose-600">Reorder</button>}{!readOnly && item.status === 'In Maintenance' && <button type="button" onClick={() => setMaintenanceConfirmAsset(item)} className="text-[0.6rem] font-bold uppercase tracking-[0.1em] text-indigo-600">Complete Maintenance</button>}<button type="button" onClick={() => setSelectedAsset(item)} className="text-[0.6rem] font-bold uppercase tracking-[0.1em] text-primary">View Asset</button></div></td></tr>)}</tbody>
           </table>
         </div>
+      )}
+      </>
       )}
 
       {/* Modals */}

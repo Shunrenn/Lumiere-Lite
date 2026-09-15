@@ -1,6 +1,9 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { ChevronDown, Download, Search } from 'lucide-react'
 import { AdminShell } from '@/components/admin/AdminShell'
+import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+import { ErrorFallback } from '@/components/ErrorFallback'
+import { EmptyState } from '@/components/EmptyState'
 import { useNav } from '@/lib/nav'
 import { cn } from '@/lib/utils'
 import type { AdminDestinationId } from '@/lib/admin-destinations'
@@ -277,9 +280,38 @@ export function AdminSecurityAuditPage() {
     </div>
   )
 
+  const [isLoading, setIsLoading] = useState(true)
+  const [isError, setIsError] = useState(false)
+
+  const handleRefetch = async () => {
+    setIsError(false)
+    setIsLoading(true)
+    try {
+      await new Promise((r) => setTimeout(r, 200))
+    } catch {
+      setIsError(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    handleRefetch()
+  }, [])
+
   return (
     <AdminShell activeId="security-audit" onSelect={railSelect} stickyHeader={stickyHeader}>
-      <div className="mb-5 flex flex-col gap-5">
+      {isError ? (
+        <ErrorFallback
+          title="Security Audit Trail Unavailable"
+          message="Could not load system security logs."
+          onRetry={handleRefetch}
+        />
+      ) : isLoading ? (
+        <LoadingSkeleton variant="table" />
+      ) : (
+        <>
+          <div className="mb-5 flex flex-col gap-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative min-w-0 flex-1 lg:max-w-sm">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -409,11 +441,11 @@ export function AdminSecurityAuditPage() {
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={7}
-                    className="px-4 py-20 text-center text-sm italic text-muted-foreground"
-                  >
-                    No matching log entries — try adjusting your filters.
+                  <td colSpan={7} className="py-8">
+                    <EmptyState
+                      title="No audit entries found"
+                      message="No security events match your search query, status, or role filters."
+                    />
                   </td>
                 </tr>
               ) : (
@@ -499,6 +531,8 @@ export function AdminSecurityAuditPage() {
           </table>
         </div>
       </div>
+        </>
+      )}
     </AdminShell>
   )
 }

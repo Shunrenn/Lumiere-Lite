@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { AlertTriangle, Bell, CalendarDays, Camera, Check, ChevronLeft, ChevronRight, ClipboardList, FileText, Lock, MapPin, MessageSquare, PackageCheck, Send, ShieldCheck, UserCircle2, X, Wifi, WifiOff, RefreshCw } from 'lucide-react'
+import { AlertTriangle, Bell, CalendarDays, Camera, Check, ChevronLeft, ChevronRight, ClipboardList, FileText, Lock, MapPin, MessageSquare, PackageCheck, Send, ShieldCheck, UserCircle2, X } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { usePortal } from '@/lib/store'
 import { markBatchStalled, resolveBatchStall, useDispatchStore } from '@/lib/warehouse-dispatch'
 import type { DispatchBatch } from '@/lib/event-detail'
 import { IncidentForm } from '@/components/PwaWorkflows'
+import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+import { ErrorFallback } from '@/components/ErrorFallback'
 import { decideGroundCrewDeclaration, getApproachingDeclarationsSummary, getDeclarationAging, submitGroundCrewDeclaration, useGroundCrewDeclarations, type GroundCrewDeclaration } from '@/lib/ground-crew-declarations'
-import { subscribeOfflineSync, triggerOfflineReplay } from '@/lib/offlineReplay'
-import { cn } from '@/lib/utils'
 
 type Tab = 'home' | 'tasks' | 'calendar' | 'activity' | 'account'
 type AccessLevel = 'Ground Crew / Member' | 'Team Lead / Field Lead' | 'Receiver' | 'Event Admin'
@@ -113,28 +113,6 @@ export function GroundCrewPage() {
   const [requestDate, setRequestDate] = useState('2026-08-30')
   const [requestNote, setRequestNote] = useState('')
 
-  const [isOnline, setIsOnline] = useState<boolean>(() => typeof navigator !== 'undefined' ? navigator.onLine : true)
-  const [pendingSyncCount, setPendingSyncCount] = useState<number>(0)
-  const [isSyncing, setIsSyncing] = useState<boolean>(false)
-
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true)
-    const handleOffline = () => setIsOnline(false)
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
-
-    const unsubscribe = subscribeOfflineSync((count, syncing) => {
-      setPendingSyncCount(count)
-      setIsSyncing(syncing)
-    })
-
-    return () => {
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
-      unsubscribe()
-    }
-  }, [])
-
   const notify = (message: string) => { setToast(message); window.setTimeout(() => setToast(''), 5000) }
   const openReport = (item: EventItem['items'][number]) => { setReportItem(item); setShowReport(true) }
   const submitReport = (event: FormEvent<HTMLFormElement>) => {
@@ -151,7 +129,7 @@ export function GroundCrewPage() {
       submitGroundCrewDeclaration({ eventId: selectedEvent.id, eventName: selectedEvent.name, item: reportItem.name, condition: condition as 'Damaged' | 'Missing', quantity, description, submittedBy: adminName || 'Ground Crew Member', submittedRole: accessLevel === 'Event Admin' ? 'Field Lead' : accessLevel === 'Ground Crew / Member' ? 'Member' : 'Team Lead', submittedAt: new Date().toISOString(), demoLabel: undefined })
       setReports((current) => [{ id: `r-${Date.now()}`, event: selectedEvent.name, item: reportItem.name, phase: selectedEvent.phase, quantity, description, photo: photoCaptured ? 'photo-capture.jpg' : '', capturedAt: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }), location }, ...current])
       setShowReport(false)
-      notify(isOnline ? 'Validation report submitted for Event Admin confirmation.' : 'Offline mode: Report saved locally. Will sync when back online.')
+      notify(typeof navigator !== 'undefined' && navigator.onLine ? 'Validation report submitted for Event Admin confirmation.' : 'Offline mode: Report saved locally. Will sync when back online.')
     }
     if (navigator.geolocation) navigator.geolocation.getCurrentPosition((position) => save(`${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`), () => save('GPS unavailable'))
     else save('GPS unavailable')
@@ -166,41 +144,33 @@ export function GroundCrewPage() {
     notify('Egress started — advanced to On Venue.')
   }
 
+  const [isLoading] = useState(false)
+  const [isError, setIsError] = useState(false)
+
   return <div className="mobile-shell admin-fade">
     <header className="app-header">
       <div>
         <p className="eyebrow flex items-center gap-1.5">
           <span>Lumière Operations</span>
-          {!isOnline ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/20 px-1.5 py-0.5 text-[0.55rem] font-bold uppercase text-rose-300">
-              <WifiOff className="size-2.5" /> Offline
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[0.55rem] font-bold uppercase text-emerald-400">
-              <Wifi className="size-2.5" /> Online
-            </span>
-          )}
-          {pendingSyncCount > 0 && (
-            <button
-              type="button"
-              onClick={() => triggerOfflineReplay()}
-              className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[0.55rem] font-bold uppercase text-amber-300 hover:bg-amber-500/30 transition"
-              title="Click to sync pending offline items"
-            >
-              <RefreshCw className={cn('size-2.5', isSyncing && 'animate-spin')} /> {pendingSyncCount} queued
-            </button>
-          )}
         </p>
         <div className="brand-mark">GROUND CREW</div>
       </div>
       <button className="avatar" onClick={() => setTab('account')} aria-label="Open account">{(adminName || 'GC').slice(0, 2).toUpperCase()}</button>
     </header>
     <main className="app-main">
-      {tab === 'tasks' && <DecisionMode declarations={declarations} accessLevel={accessLevel} adminEventId={adminEventId} events={crewEvents} onEventChange={setAdminEventId} onDecision={(id, decision) => { decideGroundCrewDeclaration(id, decision, adminName || 'Event Admin'); notify(`Declaration ${decision.toLowerCase()}.`) }} />}
-      {tab === 'home' && (selectedEvent ? <EventDetail event={selectedEvent} batches={dispatchStore.get(selectedEvent.id) ?? []} handoffNote={handoffNotes[selectedEvent.id] ?? ''} onHandoffNoteChange={(value) => setHandoffNote(selectedEvent.id, value)} egressError={egressError} onStartEgress={() => startEgress(selectedEvent.id)} onBack={() => { setSelectedEventId(null); setEgressError('') }} onReport={openReport} onStall={(batchId, reason) => { markBatchStalled(selectedEvent.id, batchId, reason); notify('Batch marked Stalled In Transit.') }} onResume={(batchId) => { resolveBatchStall(selectedEvent.id, batchId); notify('Transit resumed.') }} /> : <Home events={crewEvents} onOpen={(event) => setSelectedEventId(event.id)} approachingSummary={accessLevel === 'Event Admin' ? getApproachingDeclarationsSummary() : null} />)}
-      {tab === 'calendar' && <CalendarView selectedDate={selectedDate} setSelectedDate={setSelectedDate} notes={notes} setNotes={setNotes} onSave={() => notify('Personal note saved.')} events={crewEvents} />}
-      {tab === 'activity' && <Activity reports={reports} requests={requests} events={crewEvents} />}
-      {tab === 'account' && <Account name={adminName || 'Ground Crew'} email={adminEmail || 'crew@lumiere.com'} requests={requests} onRequest={() => setRequestOpen(true)} onLogout={logout} />}
+      {isError ? (
+        <ErrorFallback title="Ground Crew Console Unavailable" message="Could not load assigned events or checkpoint task list." onRetry={() => setIsError(false)} />
+      ) : isLoading ? (
+        <LoadingSkeleton variant="cards" />
+      ) : (
+        <>
+          {tab === 'tasks' && <DecisionMode declarations={declarations} accessLevel={accessLevel} adminEventId={adminEventId} events={crewEvents} onEventChange={setAdminEventId} onDecision={(id, decision) => { decideGroundCrewDeclaration(id, decision, adminName || 'Event Admin'); notify(`Declaration ${decision.toLowerCase()}.`) }} />}
+          {tab === 'home' && (selectedEvent ? <EventDetail event={selectedEvent} batches={dispatchStore.get(selectedEvent.id) ?? []} handoffNote={handoffNotes[selectedEvent.id] ?? ''} onHandoffNoteChange={(value) => setHandoffNote(selectedEvent.id, value)} egressError={egressError} onStartEgress={() => startEgress(selectedEvent.id)} onBack={() => { setSelectedEventId(null); setEgressError('') }} onReport={openReport} onStall={(batchId, reason) => { markBatchStalled(selectedEvent.id, batchId, reason); notify('Batch marked Stalled In Transit.') }} onResume={(batchId) => { resolveBatchStall(selectedEvent.id, batchId); notify('Transit resumed.') }} /> : <Home events={crewEvents} onOpen={(event) => setSelectedEventId(event.id)} approachingSummary={accessLevel === 'Event Admin' ? getApproachingDeclarationsSummary() : null} />)}
+          {tab === 'calendar' && <CalendarView selectedDate={selectedDate} setSelectedDate={setSelectedDate} notes={notes} setNotes={setNotes} onSave={() => notify('Personal note saved.')} events={crewEvents} />}
+          {tab === 'activity' && <Activity reports={reports} requests={requests} events={crewEvents} />}
+          {tab === 'account' && <Account name={adminName || 'Ground Crew'} email={adminEmail || 'crew@lumiere.com'} requests={requests} onRequest={() => setRequestOpen(true)} onLogout={logout} />}
+        </>
+      )}
     </main>
     <nav className="bottom-nav" aria-label="Crew navigation">{([['home', 'Home', ClipboardList], ['tasks', 'Tasks', ShieldCheck], ['calendar', 'Calendar', CalendarDays], ['activity', 'Activity', FileText], ['account', 'Account', UserCircle2]] as const).map(([key, label, Icon]) => <button key={key} onClick={() => { setTab(key); setSelectedEventId(null); setEgressError('') }} className={tab === key ? 'active' : ''}><Icon className="size-5" /><span>{label}</span></button>)}</nav>
     {toast && <div className="fixed bottom-24 left-1/2 z-40 w-[calc(100%-32px)] max-w-[528px] -translate-x-1/2 rounded-md bg-primary px-4 py-3 text-center text-sm text-primary-foreground shadow-lg">{toast}</div>}
@@ -427,7 +397,7 @@ function PhaseMap({ phase }: { phase: Phase }) {
       {order.map((item, index) => {
         const state = index < activeIndex ? 'done' : index === activeIndex ? 'active' : 'pending'
         return (
-          <div key={item} className={`rounded border px-2 py-3 text-center text-[10px] font-bold uppercase tracking-wide ${state === 'active' ? 'border-primary bg-primary text-primary-foreground' : state === 'done' ? 'border-primary/40 bg-secondary/60 text-foreground' : 'border-border bg-card text-muted-foreground'}`}>
+          <div key={item} className={`rounded border px-2 py-3 text-center text-xs font-bold uppercase tracking-wide ${state === 'active' ? 'border-primary bg-primary text-primary-foreground' : state === 'done' ? 'border-primary/40 bg-secondary/60 text-foreground' : 'border-border bg-card text-muted-foreground'}`}>
             <div className="flex items-center justify-center gap-1">
               {state === 'done' && <Check className="size-3" />}
               {state === 'pending' && <Lock className="size-3" />}
@@ -499,7 +469,7 @@ function StallControl({ batch, onStall, onResume }: { batch: DispatchBatch; onSt
         <p className="text-xs text-muted-foreground">{batch.plateNumber} · {batch.stage}</p>
       </div>
       {batch.stalled ? (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-100 px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-wider text-amber-900 shadow-sm dark:border-amber-700/60 dark:bg-amber-900/50 dark:text-amber-200">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-100 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-amber-900 shadow-sm dark:border-amber-700/60 dark:bg-amber-900/50 dark:text-amber-200">
           <AlertTriangle className="size-3 text-amber-600 dark:text-amber-400" />
           Stalled In Transit
         </span>
@@ -635,16 +605,16 @@ function CalendarView({ selectedDate, setSelectedDate, notes, setNotes, onSave, 
       <header><p className="eyebrow">Schedule & personal notes</p><h1 className="mt-2 text-3xl font-serif">Calendar</h1><p className="mt-2 text-sm leading-6 text-muted-foreground">Tap a day to see call sheets, meetings, and event assignments.</p></header>
       <section className="paper-card">
         <div className="flex items-center justify-between"><button className="icon-button" onClick={() => setSelectedDate('2026-08-01')} aria-label="Previous month"><ChevronLeft className="size-4" /></button><h2 className="font-serif text-xl">August 2026</h2><button className="icon-button" onClick={() => setSelectedDate('2026-08-31')} aria-label="Next month"><ChevronRight className="size-4" /></button></div>
-        <div className="mt-4 grid grid-cols-7 gap-1 text-center text-xs"><div className="col-span-7 grid grid-cols-7 text-muted-foreground">{['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <span key={`${d}-${i}`}>{d}</span>)}</div><span /><span /><span /><span /><span /><span /><span />{days.map((day) => { const date = `2026-08-${String(day).padStart(2, '0')}`; const hasSchedule = SCHEDULE.some((item) => item.date === date); const hasNote = Boolean(notes[date]); return <button key={date} onClick={() => setSelectedDate(date)} className={`rounded p-2 ${date === selectedDate ? 'bg-primary text-primary-foreground' : hasSchedule ? 'font-bold text-primary' : ''}`}><span className="block">{day}</span><DayDots hasSchedule={hasSchedule} hasNote={hasNote} /></button> })}</div>
+        <div className="mt-4 grid grid-cols-7 gap-1 text-center text-xs"><div className="col-span-7 grid grid-cols-7 text-muted-foreground">{['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <span key={`${d}-${i}`}>{d}</span>)}</div><span /><span /><span /><span /><span /><span /><span />{days.map((day) => { const date = `2026-08-${String(day).padStart(2, '0')}`; const hasSchedule = SCHEDULE.some((item) => item.date === date); const hasNote = Boolean(notes[date]); return <button key={date} onClick={() => setSelectedDate(date)} className={`min-h-[44px] min-w-[44px] flex flex-col items-center justify-center rounded p-1 ${date === selectedDate ? 'bg-primary text-primary-foreground' : hasSchedule ? 'font-bold text-primary' : ''}`}><span className="block text-xs">{day}</span><DayDots hasSchedule={hasSchedule} hasNote={hasNote} /></button> })}</div>
       </section>
 
       {callSheet && dayEvent && (
         <section className="paper-card">
           <div className="flex items-center gap-2"><FileText className="size-4 text-primary" /><p className="eyebrow">Call sheet · {dayEvent.name}</p></div>
           <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-            <div className="rounded border border-border bg-secondary/40 p-3"><p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Arrival</p><p className="mt-1 font-serif text-lg">{callSheet.arrival}</p></div>
-            <div className="rounded border border-border bg-secondary/40 p-3"><p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Setup</p><p className="mt-1 font-serif text-lg">{callSheet.setup}</p></div>
-            <div className="rounded border border-border bg-secondary/40 p-3"><p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Standby</p><p className="mt-1 font-serif text-lg">{callSheet.standby}</p></div>
+            <div className="rounded border border-border bg-secondary/40 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Arrival</p><p className="mt-1 font-serif text-lg">{callSheet.arrival}</p></div>
+            <div className="rounded border border-border bg-secondary/40 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Setup</p><p className="mt-1 font-serif text-lg">{callSheet.setup}</p></div>
+            <div className="rounded border border-border bg-secondary/40 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Standby</p><p className="mt-1 font-serif text-lg">{callSheet.standby}</p></div>
           </div>
         </section>
       )}

@@ -1,6 +1,5 @@
 import { useState, type ReactNode } from 'react'
 import { Menu } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { ConsoleSidebar } from '@/components/ConsoleSidebar'
 
 interface Props {
@@ -32,10 +31,7 @@ export function ConsoleLayout({ children }: Props) {
       />
 
       <div
-        className={cn(
-          'flex min-w-0 flex-1 flex-col overflow-hidden transition-[margin] duration-300 ease-in-out ml-0',
-          collapsed ? 'lg:ml-20' : 'lg:ml-64',
-        )}
+        className="flex min-w-0 flex-1 flex-col overflow-hidden transition-[margin] duration-300 ease-in-out ml-0 lg:ml-16"
       >
         {/* Mobile top bar */}
         <header className="flex shrink-0 items-center justify-between border-b border-border bg-sidebar px-4 py-3 lg:hidden">

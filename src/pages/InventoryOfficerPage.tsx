@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Activity as ActivityIcon, Bell, CalendarDays, Check, ClipboardList, Package, Plus, Search, Truck, UserCircle2, Warehouse, X } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
+import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+import { ErrorFallback } from '@/components/ErrorFallback'
 import { inventoryOps, useInventoryOps, type OpsEventItem, type OpsInventoryItem, type OpsOrder, type TrackingStatus } from '@/lib/inventory-ops'
 
 type Tab = 'home' | 'inventory' | 'orders' | 'tracking' | 'calendar' | 'activity' | 'account'
@@ -19,9 +21,38 @@ export function InventoryOfficerPage() {
   const notify = (message: string) => { setToast(message); window.setTimeout(() => setToast(''), 5000) }
   const go = (next: Tab) => setTab(next)
   const tabs: [Tab, string, typeof ClipboardList][] = [['home', 'Home', ClipboardList], ['inventory', 'Inventory', Package], ['orders', 'Orders', ClipboardList], ['tracking', 'Tracking', Truck], ['calendar', 'Calendar', CalendarDays], ['activity', 'Activity', ActivityIcon], ['account', 'Account', UserCircle2]]
+  const [isLoading, setIsLoading] = useState(true)
+  const [isError, setIsError] = useState(false)
+
+  const handleRefetch = async () => {
+    setIsError(false)
+    setIsLoading(true)
+    try {
+      await new Promise((r) => setTimeout(r, 200))
+    } catch {
+      setIsError(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    handleRefetch()
+  }, [])
+
   return <div className="mobile-shell admin-fade">
     <header className="app-header"><div><p className="eyebrow">Lumière Operations</p><div className="brand-mark">INVENTORY</div></div><button className="avatar" onClick={() => go('account')} aria-label="Open account">{(adminName || 'IO').slice(0, 2).toUpperCase()}</button></header>
     <main className="app-main">
+      {isError ? (
+        <ErrorFallback
+          title="Inventory Officer Portal Unavailable"
+          message="Could not load stock records and dispatch tracking."
+          onRetry={handleRefetch}
+        />
+      ) : isLoading ? (
+        <LoadingSkeleton variant="dashboard" />
+      ) : (
+        <>
       {tab === 'home' && <Home ops={ops} onNavigate={go} onEvent={() => go('tracking')} />}
       {tab === 'inventory' && <Inventory items={ops.inventory} search={search} setSearch={setSearch} onOpen={setSelectedItem} />}
       {tab === 'orders' && <Orders orders={ops.orders} onNotify={notify} />}
@@ -29,6 +60,8 @@ export function InventoryOfficerPage() {
       {tab === 'calendar' && <CalendarView selectedDate={selectedDate} setSelectedDate={setSelectedDate} notes={ops.notes} onSave={(note) => { inventoryOps.saveNote(selectedDate, note); notify('Calendar note saved.') }} orders={ops.orders} batches={ops.batches} />}
       {tab === 'activity' && <Activity entries={ops.activity} />}
       {tab === 'account' && <Account name={adminName || 'Inventory Officer'} email={adminEmail || 'inventory@lumiere.com'} onLogout={logout} />}
+        </>
+      )}
     </main>
     <nav className="bottom-nav" aria-label="Inventory navigation">{tabs.slice(0, 5).map(([key, label, Icon]) => <button key={key} onClick={() => go(key)} className={tab === key ? 'active' : ''}><Icon className="size-5" /><span>{label}</span></button>)}<button onClick={() => go('activity')} className={tab === 'activity' ? 'active' : ''}><ActivityIcon className="size-5" /><span>Activity</span></button><button onClick={() => go('account')} className={tab === 'account' ? 'active' : ''}><UserCircle2 className="size-5" /><span>Account</span></button></nav>
     {selectedItem && <InventoryDetail item={ops.inventory.find((item) => item.id === selectedItem.id) ?? selectedItem} onClose={() => setSelectedItem(null)} onNotify={notify} />}

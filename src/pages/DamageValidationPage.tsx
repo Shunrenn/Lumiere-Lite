@@ -3,6 +3,9 @@ import { Search, CheckCircle2, XCircle, Clock3, Scale, MoreVertical, Wrench, Ban
 import { ExecutiveShell } from '@/components/executive/ExecutiveShell'
 import { DamageVerdictModal } from '@/components/DamageVerdictModal'
 import { CompactStatStrip } from '@/components/CompactStatStrip'
+import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+import { ErrorFallback } from '@/components/ErrorFallback'
+import { EmptyState } from '@/components/EmptyState'
 import { usePortal } from '@/lib/store'
 import { useAuth } from '@/lib/auth'
 import { useNav } from '@/lib/nav'
@@ -162,9 +165,38 @@ export function DamageValidationPage() {
     })
   }
 
+  const [isLoading, setIsLoading] = useState(true)
+  const [isError, setIsError] = useState(false)
+
+  const handleRefetch = async () => {
+    setIsError(false)
+    setIsLoading(true)
+    try {
+      await new Promise((r) => setTimeout(r, 200))
+    } catch {
+      setIsError(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    handleRefetch()
+  }, [])
+
   return (
     <ExecutiveShell activeId="damage" onSelect={destination} stickyHeader={stickyHeader}>
-      {!isBackendConnected && (
+      {isError ? (
+        <ErrorFallback
+          title="Damage Exceptions Registry Unavailable"
+          message="Could not load damage validation reports from backend."
+          onRetry={handleRefetch}
+        />
+      ) : isLoading ? (
+        <LoadingSkeleton variant="table" />
+      ) : (
+        <>
+          {!isBackendConnected && (
         <div
           role="alert"
           className="mt-4 flex items-center gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-5 py-4 text-amber-800 dark:text-amber-200 shadow-sm"
@@ -246,8 +278,11 @@ export function DamageValidationPage() {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-16 text-center text-xs text-muted-foreground">
-                  No exceptions match your search.
+                <td colSpan={9} className="py-8">
+                  <EmptyState
+                    title="No damage reports found"
+                    message="No damage exception reports match your search query or filter criteria."
+                  />
                 </td>
               </tr>
             ) : (
@@ -370,6 +405,8 @@ export function DamageValidationPage() {
         </table>
         </div>
       </div>
+      </>
+      )}
 
       <DamageVerdictModal
         exception={active}

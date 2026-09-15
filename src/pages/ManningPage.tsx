@@ -2,6 +2,8 @@ import { useEffect, useState, type Dispatch, type SetStateAction } from 'react'
 import { Bell, CalendarDays, ClipboardList, FileText, Lock, ShieldAlert, UserCircle2, X } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { WarningPanel, ActionButton } from '@/components/PwaWorkflows'
+import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+import { ErrorFallback } from '@/components/ErrorFallback'
 import { MaskedPinInput } from '@/components/admin/MaskedPinInput'
 import { decideGroundCrewDeclaration, getApproachingDeclarationsSummary, getManningFallbackDeclarations, reconcileExpiredDeclarations, useGroundCrewDeclarations, type GroundCrewDeclaration } from '@/lib/ground-crew-declarations'
 
@@ -36,7 +38,144 @@ export function ManningPage() {
   const notify = (message: string) => { setToast(message); window.setTimeout(() => setToast(''), 5000) }
   const unlock = () => { if (pin === '246810') { setUnlocked(true); setPinOpen(false); setPin(''); notify('Incident Inbox unlocked for this session.') } else notify('Enter the 6-digit Manning PIN.') }
 
-  return <div className="mobile-shell admin-fade"><header className="app-header"><div><p className="eyebrow">Lumière Operations</p><div className="brand-mark">MANNING OFFICER</div></div><button className="avatar" onClick={() => setTab('account')} aria-label="Open account">{(adminName || 'MO').slice(0,2).toUpperCase()}</button></header><main className="app-main">{tab === 'home' && <Home onNotify={notify} overdue={overdueTasks} fallbackDeclarations={fallbackDeclarations} approachingSummary={approachingSummary} onOverrideTask={(id, title) => { setOverdueTasks((prev) => prev.filter((t) => t.id !== id)); notify(`${title} overridden by Manning.`) }} onOverrideDeclaration={(id, decision) => { decideGroundCrewDeclaration(id, decision, adminName || 'Manning Officer'); notify(`Escalated declaration ${decision.toLowerCase()} by Manning.`) }} onInbox={() => unlocked ? null : setPinOpen(true)} unlocked={unlocked} incidentStates={incidentStates} setIncidentStates={setIncidentStates} />}{tab === 'calendar' && <DailyReview onNotify={notify} fallbackCount={fallbackDeclarations.length} approachingCount={approachingSummary.totalApproaching} />}{tab === 'activity' && <Activity />}{tab === 'account' && <Account name={adminName || 'Manning Officer'} email={adminEmail || 'manning@lumiere.com'} onLogout={logout} />}</main><nav className="bottom-nav" aria-label="Manning navigation">{([['home','Home',ClipboardList],['calendar','Calendar',CalendarDays],['activity','Activity',FileText],['account','Account',UserCircle2]] as const).map(([key,label,Icon]) => <button key={key} onClick={() => setTab(key)} className={tab === key ? 'active' : ''}><Icon className="size-5" /><span>{label}</span></button>)}</nav>{toast && <div className="fixed bottom-24 left-1/2 z-40 w-[calc(100%-32px)] -translate-x-1/2 rounded-md bg-primary px-4 py-3 text-center text-sm text-primary-foreground shadow-lg">{toast}</div>}{pinOpen && <div className="sheet-backdrop"><div className="sheet space-y-4"><div className="flex items-start justify-between"><div><p className="eyebrow">Restricted</p><h2 className="mt-1 font-serif text-2xl">Incident Inbox</h2></div><button className="icon-button" onClick={() => setPinOpen(false)} aria-label="Close"><X className="size-4" /></button></div><div className="flex items-center gap-2 text-sm text-muted-foreground"><Lock className="size-4" /> Enter your six-digit PIN to continue.</div><div className="mt-2 text-left"><MaskedPinInput id="manning-pin-input" label="6-digit PIN" value={pin} onChange={setPin} onKeyDown={(e) => { if (e.key === 'Enter' && pin.length === 6) unlock() }} autoFocus /></div><button className="button-primary w-full" onClick={unlock}>Unlock inbox</button></div></div>}</div>
+  const [isLoading, setIsLoading] = useState(true)
+  const [isError, setIsError] = useState(false)
+
+  const handleRefetch = async () => {
+    setIsError(false)
+    setIsLoading(true)
+    try {
+      await new Promise((r) => setTimeout(r, 200))
+    } catch {
+      setIsError(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    handleRefetch()
+  }, [])
+
+  return (
+    <div className="mobile-shell admin-fade">
+      <header className="app-header">
+        <div>
+          <p className="eyebrow">Lumière Operations</p>
+          <div className="brand-mark">MANNING OFFICER</div>
+        </div>
+        <button className="avatar" onClick={() => setTab('account')} aria-label="Open account">
+          {(adminName || 'MO').slice(0, 2).toUpperCase()}
+        </button>
+      </header>
+
+      <main className="app-main">
+        {isError ? (
+          <ErrorFallback
+            title="Manning Dashboard Unavailable"
+            message="Could not sync ground crew declarations."
+            onRetry={handleRefetch}
+          />
+        ) : isLoading ? (
+          <LoadingSkeleton variant="dashboard" />
+        ) : (
+          <>
+            {tab === 'home' && (
+              <Home
+                onNotify={notify}
+                overdue={overdueTasks}
+                fallbackDeclarations={fallbackDeclarations}
+                approachingSummary={approachingSummary}
+                onOverrideTask={(id, title) => {
+                  setOverdueTasks((prev) => prev.filter((t) => t.id !== id))
+                  notify(`${title} overridden by Manning.`)
+                }}
+                onOverrideDeclaration={(id, decision) => {
+                  decideGroundCrewDeclaration(id, decision, adminName || 'Manning Officer')
+                  notify(`Escalated declaration ${decision.toLowerCase()} by Manning.`)
+                }}
+                onInbox={() => (unlocked ? null : setPinOpen(true))}
+                unlocked={unlocked}
+                incidentStates={incidentStates}
+                setIncidentStates={setIncidentStates}
+              />
+            )}
+            {tab === 'calendar' && (
+              <DailyReview
+                onNotify={notify}
+                fallbackCount={fallbackDeclarations.length}
+                approachingCount={approachingSummary.totalApproaching}
+              />
+            )}
+            {tab === 'activity' && <Activity />}
+            {tab === 'account' && (
+              <Account
+                name={adminName || 'Manning Officer'}
+                email={adminEmail || 'manning@lumiere.com'}
+                onLogout={logout}
+              />
+            )}
+          </>
+        )}
+      </main>
+
+      <nav className="bottom-nav" aria-label="Manning navigation">
+        {(
+          [
+            ['home', 'Home', ClipboardList],
+            ['calendar', 'Calendar', CalendarDays],
+            ['activity', 'Activity', FileText],
+            ['account', 'Account', UserCircle2],
+          ] as const
+        ).map(([key, label, Icon]) => (
+          <button key={key} onClick={() => setTab(key)} className={tab === key ? 'active' : ''}>
+            <Icon className="size-5" />
+            <span>{label}</span>
+          </button>
+        ))}
+      </nav>
+
+      {toast && (
+        <div className="fixed bottom-24 left-1/2 z-40 w-[calc(100%-32px)] -translate-x-1/2 rounded-md bg-primary px-4 py-3 text-center text-sm text-primary-foreground shadow-lg">
+          {toast}
+        </div>
+      )}
+
+      {pinOpen && (
+        <div className="sheet-backdrop">
+          <div className="sheet space-y-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="eyebrow">Restricted</p>
+                <h2 className="mt-1 font-serif text-2xl">Incident Inbox</h2>
+              </div>
+              <button className="icon-button" onClick={() => setPinOpen(false)} aria-label="Close">
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Lock className="size-4" /> Enter your six-digit PIN to continue.
+            </div>
+            <div className="mt-2 text-left">
+              <MaskedPinInput
+                id="manning-pin-input"
+                label="6-digit PIN"
+                value={pin}
+                onChange={setPin}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && pin.length === 6) unlock()
+                }}
+                autoFocus
+              />
+            </div>
+            <button className="button-primary w-full" onClick={unlock}>
+              Unlock inbox
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 function Home({ onNotify, overdue, fallbackDeclarations, approachingSummary, onOverrideTask, onOverrideDeclaration, onInbox, unlocked, incidentStates, setIncidentStates }: { onNotify: (message:string)=>void; overdue: { id: string; title: string; lead: string; due: string }[]; fallbackDeclarations: GroundCrewDeclaration[]; approachingSummary: { totalApproaching: number; eventsCount: number }; onOverrideTask: (id: string, title: string) => void; onOverrideDeclaration: (id: string, decision: 'Confirmed' | 'Rejected') => void; onInbox:()=>void; unlocked:boolean; incidentStates:Record<string,string>; setIncidentStates: Dispatch<SetStateAction<Record<string,string>>> }) {

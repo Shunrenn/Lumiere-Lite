@@ -253,6 +253,7 @@ function SignInView(props: {
 
       <div className="mt-6 space-y-1 text-center text-xs text-muted-foreground/70">
         <p>Demo admin · admin@lumiere.com · lumiere2026</p>
+        <p>Temp password account · tempadmin@lumiere.com · lumiere2026</p>
         <p>Executive · executive@lumiere.com · lumiere2026</p>
         <p>Executive (second sign-off) · executive2@lumiere.com · lumiere2026</p>
         <p>Event planner · planner@lumiere.com · lumiere2026</p>

@@ -1,6 +1,8 @@
 import { useMemo, useState, useEffect } from 'react'
 import { Search, Download, Plus, Package } from 'lucide-react'
 import { ConsoleLayout } from '@/components/ConsoleLayout'
+import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+import { ErrorFallback } from '@/components/ErrorFallback'
 import { ReorderRequisitionModal } from '@/components/ReorderRequisitionModal'
 import { EditThresholdModal } from '@/components/EditThresholdModal'
 import { ShopForOrderModal } from '@/components/ShopForOrderModal'
@@ -150,8 +152,37 @@ export function ReplenishmentPage() {
     }
   }
 
+  const [isLoading, setIsLoading] = useState(true)
+  const [isError, setIsError] = useState(false)
+
+  const handleRefetch = async () => {
+    setIsError(false)
+    setIsLoading(true)
+    try {
+      await new Promise((r) => setTimeout(r, 200))
+    } catch {
+      setIsError(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    handleRefetch()
+  }, [])
+
   return (
     <ConsoleLayout>
+      {isError ? (
+        <ErrorFallback
+          title="Replenishment Monitoring Unavailable"
+          message="Could not load deficit tracking and procurement requisitions."
+          onRetry={handleRefetch}
+        />
+      ) : isLoading ? (
+        <LoadingSkeleton variant="table" />
+      ) : (
+        <>
       {/* Page heading */}
       <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
@@ -304,6 +335,8 @@ export function ReplenishmentPage() {
           </table>
         </div>
       </div>
+        </>
+      )}
 
       <ReorderRequisitionModal item={reorderItem} onClose={() => setReorderItem(null)} />
       <EditThresholdModal item={editItem} onClose={() => setEditItem(null)} />

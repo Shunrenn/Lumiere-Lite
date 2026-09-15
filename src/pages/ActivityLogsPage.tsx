@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Search, Download } from 'lucide-react'
 import { ExecutiveShell } from '@/components/executive/ExecutiveShell'
+import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+import { ErrorFallback } from '@/components/ErrorFallback'
 import { usePortal } from '@/lib/store'
 import { useNav } from '@/lib/nav'
 import { cn } from '@/lib/utils'
@@ -99,8 +101,37 @@ export function ActivityLogsPage() {
     </div>
   )
 
+  const [isLoading, setIsLoading] = useState(true)
+  const [isError, setIsError] = useState(false)
+
+  const handleRefetch = async () => {
+    setIsError(false)
+    setIsLoading(true)
+    try {
+      await new Promise((r) => setTimeout(r, 200))
+    } catch {
+      setIsError(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    handleRefetch()
+  }, [])
+
   return (
     <ExecutiveShell activeId="logs" onSelect={destination} stickyHeader={stickyHeader}>
+      {isError ? (
+        <ErrorFallback
+          title="System Audit Logs Unavailable"
+          message="Could not load system-wide activity logs."
+          onRetry={handleRefetch}
+        />
+      ) : isLoading ? (
+        <LoadingSkeleton variant="table" />
+      ) : (
+        <>
       {/* Status filters + export */}
       <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2">
@@ -231,6 +262,8 @@ export function ActivityLogsPage() {
           </tbody>
         </table>
       </div>
+        </>
+      )}
     </ExecutiveShell>
   )
 }

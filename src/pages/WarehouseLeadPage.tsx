@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Bell, Calendar, CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, FileText, Plus, Send, UserCircle2, Users, X } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useWarehouse, LEAD_NOTIFICATIONS, type WarehouseEvent, type WarehouseTask } from '@/lib/warehouse'
 import { FeedbackForm, IncidentForm, GenericTaskPanel } from '@/components/PwaWorkflows'
+import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+import { ErrorFallback } from '@/components/ErrorFallback'
 
 type Tab = 'home' | 'calendar' | 'activity' | 'account'
 
@@ -43,9 +45,38 @@ export function WarehouseLeadPage() {
     notify('Task assigned.')
   }
 
+  const [isLoading, setIsLoading] = useState(true)
+  const [isError, setIsError] = useState(false)
+
+  const handleRefetch = async () => {
+    setIsError(false)
+    setIsLoading(true)
+    try {
+      await new Promise((r) => setTimeout(r, 200))
+    } catch {
+      setIsError(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    handleRefetch()
+  }, [])
+
   return <div className="mobile-shell admin-fade">
     <header className="app-header"><div><p className="eyebrow">Lumière Operations</p><div className="brand-mark">WAREHOUSE LEAD</div></div><button className="avatar" onClick={() => setTab('account')} aria-label="Open account">{(adminName || 'WL').slice(0, 2).toUpperCase()}</button></header>
     <main className="app-main">
+      {isError ? (
+        <ErrorFallback
+          title="Warehouse Lead Portal Unavailable"
+          message="Could not load event task assignments."
+          onRetry={handleRefetch}
+        />
+      ) : isLoading ? (
+        <LoadingSkeleton variant="dashboard" />
+      ) : (
+        <>
       {tab === 'home' && (selectedEvent ? (
         <EventDetail event={selectedEvent} tasks={tasks.filter((t) => t.eventId === selectedEvent.id)} crew={crew} onBack={() => setSelectedEvent(null)} onAssign={setAssignItem} onApprove={(id) => { updateTaskStatus(id, 'Approved'); notify('Task approved.') }} onReject={(id) => { updateTaskStatus(id, 'Rejected'); notify('Sent back for rework.') }} />
       ) : (
@@ -54,6 +85,8 @@ export function WarehouseLeadPage() {
       {tab === 'calendar' && <CalendarView selectedDate={selectedDate} setSelectedDate={setSelectedDate} notes={notes} setNotes={setNotes} onSave={() => notify('Personal note saved.')} tasks={tasks} events={events} />}
       {tab === 'activity' && <Activity activity={activity} tasks={tasks} />}
       {tab === 'account' && <Account name={adminName || 'Warehouse Lead'} email={adminEmail || 'lead@lumiere.com'} onLogout={logout} />}
+        </>
+      )}
     </main>
     <nav className="bottom-nav" aria-label="Lead navigation">{([['home', 'Home', ClipboardList], ['calendar', 'Calendar', CalendarDays], ['activity', 'Activity', FileText], ['account', 'Account', UserCircle2]] as const).map(([key, label, Icon]) => <button key={key} onClick={() => { setTab(key); setSelectedEvent(null) }} className={tab === key ? 'active' : ''}><Icon className="size-5" /><span>{label}</span></button>)}</nav>
     {toast && <div className="fixed bottom-24 left-1/2 z-40 w-[calc(100%-32px)] max-w-[528px] -translate-x-1/2 rounded-md bg-primary px-4 py-3 text-center text-sm text-primary-foreground shadow-lg">{toast}</div>}

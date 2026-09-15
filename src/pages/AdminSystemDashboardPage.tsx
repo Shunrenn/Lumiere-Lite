@@ -10,6 +10,8 @@ import { AdminSecurityFeed } from '@/components/admin/AdminSecurityFeed'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { UserDistributionCard, TrendAnalyticsCard } from '@/components/admin/AdminAnalytics'
 import { SystemHealthMethodologyModal } from '@/components/admin/SystemHealthMethodologyModal'
+import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+import { ErrorFallback } from '@/components/ErrorFallback'
 import {
   ADMIN_DESTINATIONS,
   getAdminDestination,
@@ -43,7 +45,7 @@ function StatCard({
       className={cn(
         'flex flex-col rounded-xl border border-border bg-card p-4 text-left',
         onSelect && 'cursor-pointer transition hover:border-primary/40 hover:bg-muted/40',
-        flashing && 'ring-2 ring-primary/60 border-primary/60',
+        flashing && 'ring-2 ring-primary/60 border-primary/60 glow-primary',
       )}
       {...(agentSelector ? { [agentSelector]: '' } : {})}
     >
@@ -143,6 +145,9 @@ export function AdminSystemDashboardPage() {
 
   const isLocked = confirmItem?.type === 'account-locked'
 
+  const [isLoading] = useState(false)
+  const [isError, setIsError] = useState(false)
+
   const isDashboard = activeId === 'system-dashboard'
 
   const stickyHeader = isDashboard ? (
@@ -178,7 +183,11 @@ export function AdminSystemDashboardPage() {
       }}
       stickyHeader={stickyHeader}
     >
-      {isDashboard ? (
+      {isError ? (
+        <ErrorFallback title="System Dashboard Unavailable" message="Failed to connect to admin telemetry service." onRetry={() => setIsError(false)} />
+      ) : isLoading ? (
+        <LoadingSkeleton variant="dashboard" />
+      ) : isDashboard ? (
         <div className="flex flex-col gap-4">
           {/* Row 1: 4 small stat cards (left) + User Distribution / Live Security Feed (right) */}
           <div data-testid="admin-dashboard-stats" className="grid gap-4 lg:grid-cols-2">

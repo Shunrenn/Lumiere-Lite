@@ -6,6 +6,8 @@ import { PortalProvider } from '@/lib/store'
 import { AdminGrowthSummaryProvider } from '@/lib/admin-growth-summary'
 import { AuthProvider, useAuth } from '@/lib/auth'
 import { LogoutModal } from '@/components/LogoutModal'
+import { OfflineBanner } from '@/components/OfflineBanner'
+import { WelcomeModal } from '@/components/WelcomeModal'
 import { loadRosterFromDatabase } from '@/lib/roster'
 import { LoginPage } from '@/pages/LoginPage'
 import { OverviewPage } from '@/pages/OverviewPage'
@@ -34,6 +36,8 @@ import { WarehouseMemberPage } from '@/pages/WarehouseMemberPage'
 import { ManningPage } from '@/pages/ManningPage'
 import { ProductionManagerPage } from '@/pages/ProductionManagerPage'
 import { InventoryOfficerPage } from '@/pages/InventoryOfficerPage'
+import { PinSetupScreen } from '@/pages/PinSetupScreen'
+import { TempPasswordResetScreen } from '@/pages/TempPasswordResetScreen'
 import { PlannerProvider } from '@/lib/planner'
 import { WarehouseProvider } from '@/lib/warehouse'
 
@@ -132,7 +136,7 @@ function Router() {
 }
 
 function Gate() {
-  const { isAuthenticated, isWarehouse, isWarehouseLead, isWarehouseMember, isPlanner, isGroundCrew, isExecutive, isProductionManager, isInventoryOfficer, isManningOfficer, hasFullWarehouseAccess } = useAuth()
+  const { isAuthenticated, isTempPassword, hasConfirmationPin, isWarehouse, isWarehouseLead, isWarehouseMember, isPlanner, isGroundCrew, isExecutive, isProductionManager, isInventoryOfficer, isManningOfficer, hasFullWarehouseAccess } = useAuth()
   const [portal, setPortal] = useState<'staff' | 'crew'>('staff')
   const isMobileProductionManager = isProductionManager && !hasFullWarehouseAccess
   const isMobileInventoryOfficer = isInventoryOfficer && !hasFullWarehouseAccess
@@ -143,6 +147,14 @@ function Gate() {
     ) : (
       <LoginPage onCrewPortal={() => setPortal('crew')} />
     )
+  }
+
+  if (isTempPassword) {
+    return <TempPasswordResetScreen />
+  }
+
+  if (!hasConfirmationPin) {
+    return <PinSetupScreen />
   }
 
   // A deep-linked ?highlight=<staffId> (from the User Growth Summary modal)
@@ -180,11 +192,11 @@ function Gate() {
     <NavProvider initialRoute={initialRoute}>
       <AdminGrowthSummaryProvider>
         <Router />
+        <WelcomeModal />
       </AdminGrowthSummaryProvider>
     </NavProvider>
   )
 }
-
 function App() {
   useEffect(() => {
     // Load the crew roster from the database on app initialization
@@ -196,6 +208,7 @@ function App() {
       <PortalProvider>
         <PlannerProvider>
           <WarehouseProvider>
+            <OfflineBanner />
             <Gate />
             <LogoutModal />
           </WarehouseProvider>

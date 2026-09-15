@@ -16,13 +16,14 @@ import {
   Crop, Sliders, Contrast, Sun, Droplets, Sparkles,
   MoveHorizontal, MoveVertical, ArrowUp, ArrowDown,
   MessageCircle, EyeOff, MoreHorizontal, ChevronUp,
-  GalleryVerticalEnd, GalleryVertical, Grid2X2,
+  GalleryVerticalEnd, GalleryVertical, Grid2X2, FolderSearch, PackageSearch, ImageOff,
 } from 'lucide-react'
 import { useNav } from '@/lib/nav'
   import { cn } from '@/lib/utils'
   import { useAuth } from '@/lib/auth'
   import { usePlanner } from '@/lib/planner'
   import { EventPipelinePanel } from '@/components/EventPipelinePanel'
+  import { EmptyState } from '@/components/EmptyState'
   import { KonvaInfiniteCanvas, type KonvaInfiniteCanvasHandle, type CanvasTool, type KonvaCanvasAsset, ARTBOARD_W, ARTBOARD_H } from '@/components/canvas/KonvaInfiniteCanvas'
 
 
@@ -377,7 +378,15 @@ function ElementsTab({ onDropAsset, assets, onRouteToDeficit }: {
         </div>
       </div>
       <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-5 scrollbar-thin">
-        {filtered.map((cat) => (
+        {filtered.length === 0 ? (
+          <EmptyState
+            compact
+            title="No assets found"
+            message="No catalog decor assets match your search."
+            icon={PackageSearch}
+          />
+        ) : (
+          filtered.map((cat) => (
           <div key={cat.id}>
             <p className="mb-2 text-[0.58rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">{cat.label}</p>
             <div className="grid grid-cols-3 gap-1.5">
@@ -409,7 +418,8 @@ function ElementsTab({ onDropAsset, assets, onRouteToDeficit }: {
               })}
             </div>
           </div>
-        ))}
+        ))
+        )}
       </div>
       {blocked && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-background/60 backdrop-blur-sm">
@@ -576,22 +586,31 @@ function UploadsTab({ onDropAsset }: { onDropAsset: (asset: DroppedAsset) => voi
       </div>
       <div className="flex-1 overflow-y-auto px-3 pb-4">
         <p className="mb-2 text-[0.58rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">Your uploads</p>
-        <div className="grid grid-cols-2 gap-1.5">
-          {uploads.map((u) => (
-            <div
-              key={u.id}
-              draggable
-              onDragStart={(e) => handleDragStart(e, u)}
-              onClick={() => addToCanvas(u)}
-              className="group relative aspect-square overflow-hidden rounded-lg border border-border cursor-grab active:cursor-grabbing hover:border-primary/50 transition active:scale-95 active:opacity-70"
-            >
-              <img src={u.src} alt={u.label} draggable={false} className="size-full object-cover pointer-events-none" />
-              <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 to-transparent p-1.5 opacity-0 group-hover:opacity-100 transition">
-                <span className="text-[0.55rem] font-medium text-white truncate">{u.label}</span>
+        {uploads.length === 0 ? (
+          <EmptyState
+            compact
+            title="No uploads found"
+            message="Upload images using the button above to place them onto your canvas."
+            icon={ImageOff}
+          />
+        ) : (
+          <div className="grid grid-cols-2 gap-1.5">
+            {uploads.map((u) => (
+              <div
+                key={u.id}
+                draggable
+                onDragStart={(e) => handleDragStart(e, u)}
+                onClick={() => addToCanvas(u)}
+                className="group relative aspect-square overflow-hidden rounded-lg border border-border cursor-grab active:cursor-grabbing hover:border-primary/50 transition active:scale-95 active:opacity-70"
+              >
+                <img src={u.src} alt={u.label} draggable={false} className="size-full object-cover pointer-events-none" />
+                <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 to-transparent p-1.5 opacity-0 group-hover:opacity-100 transition">
+                  <span className="text-[0.55rem] font-medium text-white truncate">{u.label}</span>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -706,117 +725,132 @@ function ProjectsTab({
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-4">
-        {/* DESIGNS SECTION */}
-        <div>
-          <p className="mb-2 text-[0.58rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">Designs</p>
-          <div className="space-y-1.5">
-            {designs.map((proj) => (
-              <div key={proj.id} className="rounded-xl border border-border bg-background overflow-hidden">
-                <div className="flex items-center justify-between gap-1 px-3 py-2 transition hover:bg-accent/50">
-                  <button
-                    type="button"
-                    onClick={() => setExpanded((e) => (e === proj.id ? null : proj.id))}
-                    className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer"
-                  >
-                    <FolderOpen className="size-3.5 shrink-0 text-muted-foreground" />
-                    <span className="truncate text-[0.65rem] font-semibold text-foreground">{proj.title}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onInsertAllPages(proj.id)}
-                    title="Insert all pages from this project"
-                    className="flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-[0.52rem] font-bold uppercase tracking-[0.08em] text-primary transition hover:bg-primary hover:text-primary-foreground shrink-0 cursor-pointer"
-                  >
-                    <Plus className="size-2.5" /> All Pages
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setExpanded((e) => (e === proj.id ? null : proj.id))}
-                    className="p-0.5 text-muted-foreground hover:text-foreground cursor-pointer"
-                  >
-                    <ChevronDown className={cn('size-3 shrink-0 transition-transform', expanded === proj.id && 'rotate-180')} />
-                  </button>
-                </div>
-
-                {expanded === proj.id && (
-                  <div className="border-t border-border px-3 py-2 flex flex-col gap-1 bg-muted/20">
-                    {proj.pages.map((pageTitle) => (
-                      <div key={pageTitle} className="flex items-center justify-between gap-2 rounded-lg px-2 py-1 text-left text-[0.62rem] text-muted-foreground hover:bg-accent hover:text-foreground transition">
-                        <span className="flex items-center gap-1.5 truncate">
-                          <ChevronRight className="size-2.5 shrink-0" />
-                          {pageTitle}
-                        </span>
+        {filtered.length === 0 ? (
+          <EmptyState
+            compact
+            title="No projects found"
+            message="No saved designs or mood boards match your search query."
+            icon={FolderSearch}
+          />
+        ) : (
+          <>
+            {/* DESIGNS SECTION */}
+            {designs.length > 0 && (
+              <div>
+                <p className="mb-2 text-[0.58rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">Designs</p>
+                <div className="space-y-1.5">
+                  {designs.map((proj) => (
+                    <div key={proj.id} className="rounded-xl border border-border bg-background overflow-hidden">
+                      <div className="flex items-center justify-between gap-1 px-3 py-2 transition hover:bg-accent/50">
                         <button
                           type="button"
-                          onClick={() => onInsertPage(proj.id, pageTitle)}
-                          className="flex items-center gap-1 rounded bg-background border border-border px-1.5 py-0.5 text-[0.5rem] font-semibold uppercase tracking-wider text-muted-foreground hover:border-primary/50 hover:text-primary transition shrink-0 cursor-pointer"
+                          onClick={() => setExpanded((e) => (e === proj.id ? null : proj.id))}
+                          className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer"
                         >
-                          <Plus className="size-2" /> Insert
+                          <FolderOpen className="size-3.5 shrink-0 text-muted-foreground" />
+                          <span className="truncate text-[0.65rem] font-semibold text-foreground">{proj.title}</span>
                         </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* MOOD BOARDS SECTION */}
-        <div>
-          <p className="mb-2 text-[0.58rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">Mood Boards</p>
-          <div className="space-y-1.5">
-            {moodBoards.map((proj) => (
-              <div key={proj.id} className="rounded-xl border border-border bg-background overflow-hidden">
-                <div className="flex items-center justify-between gap-1 px-3 py-2 transition hover:bg-accent/50">
-                  <button
-                    type="button"
-                    onClick={() => setExpanded((e) => (e === proj.id ? null : proj.id))}
-                    className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer"
-                  >
-                    <LayoutGrid className="size-3.5 shrink-0 text-amber-400" />
-                    <span className="truncate text-[0.65rem] font-semibold text-foreground">{proj.title}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onInsertAllPages(proj.id)}
-                    title="Insert all mood board pages"
-                    className="flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[0.52rem] font-bold uppercase tracking-[0.08em] text-amber-500 transition hover:bg-amber-500 hover:text-white shrink-0 cursor-pointer"
-                  >
-                    <Plus className="size-2.5" /> Import Board
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setExpanded((e) => (e === proj.id ? null : proj.id))}
-                    className="p-0.5 text-muted-foreground hover:text-foreground cursor-pointer"
-                  >
-                    <ChevronDown className={cn('size-3 shrink-0 transition-transform', expanded === proj.id && 'rotate-180')} />
-                  </button>
-                </div>
-
-                {expanded === proj.id && (
-                  <div className="border-t border-border px-3 py-2 flex flex-col gap-1 bg-muted/20">
-                    {proj.pages.map((pageTitle) => (
-                      <div key={pageTitle} className="flex items-center justify-between gap-2 rounded-lg px-2 py-1 text-left text-[0.62rem] text-muted-foreground hover:bg-accent hover:text-foreground transition">
-                        <span className="flex items-center gap-1.5 truncate">
-                          <ChevronRight className="size-2.5 shrink-0" />
-                          {pageTitle}
-                        </span>
                         <button
                           type="button"
-                          onClick={() => onInsertPage(proj.id, pageTitle)}
-                          className="flex items-center gap-1 rounded bg-background border border-border px-1.5 py-0.5 text-[0.5rem] font-semibold uppercase tracking-wider text-muted-foreground hover:border-primary/50 hover:text-primary transition shrink-0 cursor-pointer"
+                          onClick={() => onInsertAllPages(proj.id)}
+                          title="Insert all pages from this project"
+                          className="flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-[0.52rem] font-bold uppercase tracking-[0.08em] text-primary transition hover:bg-primary hover:text-primary-foreground shrink-0 cursor-pointer"
                         >
-                          <Plus className="size-2" /> Insert
+                          <Plus className="size-2.5" /> All Pages
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setExpanded((e) => (e === proj.id ? null : proj.id))}
+                          className="p-0.5 text-muted-foreground hover:text-foreground cursor-pointer"
+                        >
+                          <ChevronDown className={cn('size-3 shrink-0 transition-transform', expanded === proj.id && 'rotate-180')} />
                         </button>
                       </div>
-                    ))}
-                  </div>
-                )}
+
+                      {expanded === proj.id && (
+                        <div className="border-t border-border px-3 py-2 flex flex-col gap-1 bg-muted/20">
+                          {proj.pages.map((pageTitle) => (
+                            <div key={pageTitle} className="flex items-center justify-between gap-2 rounded-lg px-2 py-1 text-left text-[0.62rem] text-muted-foreground hover:bg-accent hover:text-foreground transition">
+                              <span className="flex items-center gap-1.5 truncate">
+                                <ChevronRight className="size-2.5 shrink-0" />
+                                {pageTitle}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => onInsertPage(proj.id, pageTitle)}
+                                className="flex items-center gap-1 rounded bg-background border border-border px-1.5 py-0.5 text-[0.5rem] font-semibold uppercase tracking-wider text-muted-foreground hover:border-primary/50 hover:text-primary transition shrink-0 cursor-pointer"
+                              >
+                                <Plus className="size-2" /> Insert
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
+            )}
+
+            {/* MOOD BOARDS SECTION */}
+            {moodBoards.length > 0 && (
+              <div>
+                <p className="mb-2 text-[0.58rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">Mood Boards</p>
+                <div className="space-y-1.5">
+                  {moodBoards.map((proj) => (
+                    <div key={proj.id} className="rounded-xl border border-border bg-background overflow-hidden">
+                      <div className="flex items-center justify-between gap-1 px-3 py-2 transition hover:bg-accent/50">
+                        <button
+                          type="button"
+                          onClick={() => setExpanded((e) => (e === proj.id ? null : proj.id))}
+                          className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer"
+                        >
+                          <LayoutGrid className="size-3.5 shrink-0 text-amber-400" />
+                          <span className="truncate text-[0.65rem] font-semibold text-foreground">{proj.title}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onInsertAllPages(proj.id)}
+                          title="Insert all mood board pages"
+                          className="flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[0.52rem] font-bold uppercase tracking-[0.08em] text-amber-500 transition hover:bg-amber-500 hover:text-white shrink-0 cursor-pointer"
+                        >
+                          <Plus className="size-2.5" /> Import Board
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setExpanded((e) => (e === proj.id ? null : proj.id))}
+                          className="p-0.5 text-muted-foreground hover:text-foreground cursor-pointer"
+                        >
+                          <ChevronDown className={cn('size-3 shrink-0 transition-transform', expanded === proj.id && 'rotate-180')} />
+                        </button>
+                      </div>
+
+                      {expanded === proj.id && (
+                        <div className="border-t border-border px-3 py-2 flex flex-col gap-1 bg-muted/20">
+                          {proj.pages.map((pageTitle) => (
+                            <div key={pageTitle} className="flex items-center justify-between gap-2 rounded-lg px-2 py-1 text-left text-[0.62rem] text-muted-foreground hover:bg-accent hover:text-foreground transition">
+                              <span className="flex items-center gap-1.5 truncate">
+                                <ChevronRight className="size-2.5 shrink-0" />
+                                {pageTitle}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => onInsertPage(proj.id, pageTitle)}
+                                className="flex items-center gap-1 rounded bg-background border border-border px-1.5 py-0.5 text-[0.5rem] font-semibold uppercase tracking-wider text-muted-foreground hover:border-primary/50 hover:text-primary transition shrink-0 cursor-pointer"
+                              >
+                                <Plus className="size-2" /> Insert
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   )
@@ -1475,30 +1509,46 @@ function PageBar({
 
       {/* Bottom bar row */}
       <div className="flex h-9 items-center justify-between gap-3 px-4">
-        {/* Left: compact Mode Toggle button */}
-        <button
-          type="button"
-          onClick={onTogglePageNavMode}
-          title={pageNavMode === 'flow' ? 'Switch to Horizontal Thumbnails' : 'Switch to Vertical Flow'}
-          className={cn(
-            'flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.1em] transition shrink-0',
-            pageNavMode === 'thumbnail'
-              ? 'border-primary bg-primary/10 text-primary hover:bg-primary/20'
-              : 'border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground',
-          )}
-        >
-          {pageNavMode === 'flow' ? (
-            <>
-              <GalleryVertical className="size-3 text-primary" />
-              <span>{currentIdx + 1} / {pages.length}</span>
-            </>
-          ) : (
-            <>
-              <LayoutGrid className="size-3" />
-              <span>{currentIdx + 1} / {pages.length}</span>
-            </>
-          )}
-        </button>
+        {/* Left: Layout Mode Segmented Control (Vertical/Flowy vs Horizontal/Thumbnail) */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="inline-flex items-center rounded-lg border border-border bg-background p-0.5 shrink-0" role="radiogroup" aria-label="Page layout mode">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={pageNavMode === 'flow'}
+              onClick={() => pageNavMode !== 'flow' && onTogglePageNavMode()}
+              title="Vertical / Flowy Mode (continuous vertical scroll)"
+              className={cn(
+                'flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.08em] transition',
+                pageNavMode === 'flow'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              <GalleryVertical className="size-3" aria-hidden="true" />
+              <span className="hidden sm:inline">Flowy</span>
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={pageNavMode === 'thumbnail'}
+              onClick={() => pageNavMode !== 'thumbnail' && onTogglePageNavMode()}
+              title="Horizontal / Thumbnail Mode (filmstrip single artboard)"
+              className={cn(
+                'flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.08em] transition',
+                pageNavMode === 'thumbnail'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              <LayoutGrid className="size-3" aria-hidden="true" />
+              <span className="hidden sm:inline">Thumbnail</span>
+            </button>
+          </div>
+          <span className="text-[0.6rem] tabular-nums font-semibold text-muted-foreground">
+            Page {currentIdx + 1} of {pages.length}
+          </span>
+        </div>
 
         {/* Center: zoom controls */}
         <div className="flex items-center gap-1.5">
@@ -3463,6 +3513,41 @@ export function CanvasWorkspacePage() {
             <button type="button" aria-label="Copy" className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-accent hover:text-foreground"><Copy className="size-3.5" /></button>
             <button type="button" aria-label="Download" className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-accent hover:text-foreground"><Download className="size-3.5" /></button>
             <button type="button" aria-label="Move to trash" className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-accent hover:text-destructive"><Trash2 className="size-3.5" /></button>
+          </div>
+          {/* Page Layout Mode Segmented Toggle Control (Vertical/Flowy vs Horizontal/Thumbnail) */}
+          <div className="inline-flex items-center rounded-lg border border-border bg-background p-0.5 shrink-0" role="radiogroup" aria-label="Page layout mode">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={pageNavMode === 'flow'}
+              onClick={() => setPageNavMode('flow')}
+              title="Vertical / Flowy Mode (continuous vertical scroll)"
+              className={cn(
+                'flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.08em] transition',
+                pageNavMode === 'flow'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              <GalleryVertical className="size-3" aria-hidden="true" />
+              <span className="hidden md:inline">Flowy</span>
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={pageNavMode === 'thumbnail'}
+              onClick={() => setPageNavMode('thumbnail')}
+              title="Horizontal / Thumbnail Mode (filmstrip single artboard)"
+              className={cn(
+                'flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.08em] transition',
+                pageNavMode === 'thumbnail'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              <LayoutGrid className="size-3" aria-hidden="true" />
+              <span className="hidden md:inline">Thumbnail</span>
+            </button>
           </div>
           <ModeDropdown mode={mode} onChange={requestModeChange} />
         </div>

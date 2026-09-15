@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Search, ChevronDown, CalendarDays } from 'lucide-react'
 import { ConsoleLayout } from '@/components/ConsoleLayout'
+import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+import { ErrorFallback } from '@/components/ErrorFallback'
 import { CrewDetailModal, type CrewDetail } from '@/components/CrewDetailModal'
 import { CREW, type CrewStatus } from '@/lib/roster'
 import { cn } from '@/lib/utils'
@@ -64,8 +66,37 @@ export function CrewRosterPage() {
     })
   }, [query, roleFilter, statusFilter])
 
+  const [isLoading, setIsLoading] = useState(true)
+  const [isError, setIsError] = useState(false)
+
+  const handleRefetch = async () => {
+    setIsError(false)
+    setIsLoading(true)
+    try {
+      await new Promise((r) => setTimeout(r, 200))
+    } catch {
+      setIsError(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    handleRefetch()
+  }, [])
+
   return (
     <ConsoleLayout>
+      {isError ? (
+        <ErrorFallback
+          title="Crew Roster Unavailable"
+          message="Could not load staff roster and allocation matrix."
+          onRetry={handleRefetch}
+        />
+      ) : isLoading ? (
+        <LoadingSkeleton variant="table" />
+      ) : (
+        <>
       <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-[0.58rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
@@ -256,6 +287,8 @@ export function CrewRosterPage() {
           </tbody>
         </table>
       </div>
+        </>
+      )}
 
       <CrewDetailModal member={selected} onClose={() => setSelected(null)} />
     </ConsoleLayout>

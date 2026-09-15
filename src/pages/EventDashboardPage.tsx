@@ -12,6 +12,8 @@ import { ExecutivePendingActions, type ExecutivePendingItem } from '@/components
 import { PortfolioHealthMethodologyModal } from '@/components/executive/PortfolioHealthMethodologyModal'
 import { usePortal } from '@/lib/store'
 import { useNav } from '@/lib/nav'
+import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+import { ErrorFallback } from '@/components/ErrorFallback'
 import { cn } from '@/lib/utils'
 import type { ExecutiveDestinationId } from '@/lib/executive-destinations'
 
@@ -191,10 +193,18 @@ export function EventDashboardPage() {
     </div>
   )
 
+  const [isLoading] = useState(false)
+  const [isError, setIsError] = useState(false)
+
   return (
     <>
       <ExecutiveShell activeId="dashboard" onSelect={destination} stickyHeader={stickyHeader}>
-        <div className="flex flex-col gap-4">
+        {isError ? (
+          <ErrorFallback title="Executive Dashboard Unavailable" message="Could not retrieve portfolio status." onRetry={() => setIsError(false)} />
+        ) : isLoading ? (
+          <LoadingSkeleton variant="dashboard" />
+        ) : (
+          <div className="flex flex-col gap-4">
           {/* Row 1: 4 small stat cards (left) + Distribution Donut / Live Operations Feed (right) */}
           <div data-testid="executive-dashboard-stats" className="grid gap-4 lg:grid-cols-2">
             {/* 4 Cards (keyed to animate on toggle) */}
@@ -296,6 +306,7 @@ export function EventDashboardPage() {
             </div>
           </div>
         </div>
+        )}
       </ExecutiveShell>
 
       <PortfolioHealthMethodologyModal
