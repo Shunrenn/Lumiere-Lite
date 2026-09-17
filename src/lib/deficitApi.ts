@@ -1,23 +1,40 @@
 import { API_BASE_URL, getAuthToken } from './apiConfig'
 
+/**
+ * Mirrors Lumiere.Core.DTOs.DeficitResponse (Lumiere_Lite_Backend).
+ * NOTE: the backend has no eventName/itemName/itemCategory/urgencyLevel
+ * fields — it has assetId/assetDescription/category/priority instead.
+ */
 export interface DeficitQueueItemDto {
   id: string
-  eventId?: string | null
-  eventName?: string | null
-  itemCategory?: string | null
-  itemName: string
+  eventId: string
+  assetId?: string | null
+  assetDescription?: string | null
   quantityNeeded: number
-  urgencyLevel?: string | null
   status: string
+  priority?: string | null
+  triggerSource?: string | null
+  category?: string | null
+  unit?: string | null
+  currentStock?: number | null
+  threshold?: number | null
+  costPerUnit?: number | null
   createdAt?: string
 }
 
+/**
+ * Mirrors Lumiere.Core.DTOs.CreateDeficitRequest. EventId is [Required] on
+ * the backend — every deficit line must be tied to an event.
+ */
 export interface CreateDeficitItemRequestDto {
-  eventId?: string
-  itemCategory?: string
-  itemName: string
+  eventId: string
+  assetId?: string
+  assetDescription?: string
   quantityNeeded: number
-  urgencyLevel?: string
+  priority?: string
+  category?: string
+  unit?: string
+  triggerSource?: string
 }
 
 export interface UpdateDeficitStatusRequestDto {

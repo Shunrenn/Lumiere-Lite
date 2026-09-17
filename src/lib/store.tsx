@@ -1,6 +1,7 @@
 import { logAuditEvent } from '@/lib/audit-logger'
 import * as damageApi from '@/lib/damageApi'
 import { API_BASE_URL, getAuthToken } from '@/lib/apiConfig'
+import { createEventApi } from '@/lib/eventsApi'
 import {
   createContext,
   useCallback,
@@ -1414,7 +1415,17 @@ export function PortalProvider({ children }: { children: ReactNode }) {
     import('@/lib/eventsApi').then(({ fetchEventsApi }) => {
       fetchEventsApi().then((remoteEvents) => {
         if (!active || !remoteEvents.length) return
-        setEvents(remoteEvents)
+        // GET /api/events has no `client` field, so the mapper fills a
+        // placeholder for every row. Preserve whatever client name is
+        // already known locally (e.g. entered by a user) instead of
+        // letting that placeholder silently overwrite it on every refetch.
+        setEvents((prev) => {
+          const prevById = new Map(prev.map((e) => [e.id, e]))
+          return remoteEvents.map((re) => {
+            const existing = prevById.get(re.id)
+            return existing ? { ...re, client: existing.client } : re
+          })
+        })
       })
     })
     return () => {
@@ -1874,52 +1885,13 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       })
 
       // Asynchronously post to backend API endpoint with mapped DTO schema
-      const token = getAuthToken()
-
-      const dateOfEventIso = draft.targetDate
-        ? `${draft.targetDate}T00:00:00Z`
-        : new Date().toISOString()
-      const ingressDateIso = draft.ingressDate
-        ? `${draft.ingressDate}T00:00:00Z`
-        : draft.installationStart
-        ? `${draft.installationStart}T00:00:00Z`
-        : draft.targetDate
-        ? `${draft.targetDate}T00:00:00Z`
-        : dateOfEventIso
-
-      const formatTimeStr = (t?: string, defaultVal = '08:00:00') => {
-        if (!t) return defaultVal
-        return t.length === 5 ? `${t}:00` : t
-      }
-
-      const backendPayload = {
-        eventName: draft.title,
-        eventVenue: draft.venue || 'Venue Pending',
-        geoClass: draft.geoClass || 'Local',
-        dateOfEvent: dateOfEventIso,
-        ingressDate: ingressDateIso,
-        ingressTime: formatTimeStr(draft.ingressTime, '08:00:00'),
-        fullStop: formatTimeStr(draft.fullStop, '23:00:00'),
-      }
-
-      fetch(`${API_BASE_URL}/api/events`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(backendPayload),
-      })
-        .then(async (res) => {
-          if (res.ok) {
-            const created = await res.json()
-            const realId = created ? (created.eventId || created.id) : null
-            if (realId) {
-              setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...e, id: realId } : e)))
-            }
+      createEventApi(draft)
+        .then((res) => {
+          if (res.success && res.eventId) {
+            setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...e, id: res.eventId! } : e)))
           }
         })
-        .catch((err) => console.warn('[store] POST /api/events skipped/failed:', err))
+        .catch((err) => console.warn('[store] createEventApi skipped/failed:', err))
     },
     [pushLog],
   )

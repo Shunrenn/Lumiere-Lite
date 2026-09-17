@@ -1,39 +1,57 @@
 import { API_BASE_URL, getAuthToken } from './apiConfig'
 
+/**
+ * Mirrors Lumiere.Core.DTOs.VendorResponse. The backend has no
+ * contactName/email/phone/specialty/status fields on the vendor itself —
+ * contact info lives on sub-resources (representatives, contact numbers,
+ * contact platforms).
+ */
 export interface VendorDto {
-  vendorId: string
+  id: string
   name: string
-  contactName?: string
-  email?: string
-  phone?: string
-  specialty?: string
-  status?: string
+  address?: string
+  representatives: RepresentativeDto[]
 }
 
+/**
+ * Mirrors Lumiere.Core.DTOs.CreateVendorRequest exactly: { Name, Address }.
+ * Any other field (contactName/email/phone/specialty) is silently dropped
+ * by the backend, so it is not accepted here.
+ */
 export interface CreateVendorRequestDto {
   name: string
-  contactName?: string
-  email?: string
-  phone?: string
-  specialty?: string
+  address?: string
 }
 
 export interface RepresentativeDto {
-  representativeId: string
-  vendorId: string
+  id: string
   firstName: string
   lastName: string
-  email?: string
-  phone?: string
-  title?: string
 }
 
+/**
+ * Mirrors Lumiere.Core.DTOs.AddRepresentativeRequest exactly:
+ * { FirstName, LastName }.
+ */
 export interface CreateRepresentativeRequestDto {
   firstName: string
   lastName: string
-  email?: string
-  phone?: string
-  title?: string
+}
+
+/**
+ * Mirrors Lumiere.Core.DTOs.AddContactRequest: { PhoneNumber, Type }.
+ */
+export interface CreateVendorContactRequestDto {
+  phoneNumber: string
+  type?: string
+}
+
+/**
+ * Mirrors Lumiere.Core.DTOs.AddPlatformRequest: { PlatformName, Handle }.
+ */
+export interface CreateVendorPlatformRequestDto {
+  platformName: string
+  handle: string
 }
 
 function getHeaders(): HeadersInit {
@@ -109,5 +127,45 @@ export async function createVendorRepresentativeApi(
   } catch (err) {
     console.warn(`[vendorApi] POST /api/vendors/${vendorId}/representatives failed:`, err)
     return null
+  }
+}
+
+/**
+ * POST /api/vendors/{vendorId}/contacts
+ */
+export async function createVendorContactApi(
+  vendorId: string,
+  req: CreateVendorContactRequestDto,
+): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/vendors/${encodeURIComponent(vendorId)}/contacts`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(req),
+    })
+    return res.ok
+  } catch (err) {
+    console.warn(`[vendorApi] POST /api/vendors/${vendorId}/contacts failed:`, err)
+    return false
+  }
+}
+
+/**
+ * POST /api/vendors/{vendorId}/platforms
+ */
+export async function createVendorPlatformApi(
+  vendorId: string,
+  req: CreateVendorPlatformRequestDto,
+): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/vendors/${encodeURIComponent(vendorId)}/platforms`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(req),
+    })
+    return res.ok
+  } catch (err) {
+    console.warn(`[vendorApi] POST /api/vendors/${vendorId}/platforms failed:`, err)
+    return false
   }
 }

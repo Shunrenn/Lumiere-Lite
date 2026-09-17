@@ -25,6 +25,15 @@ export default defineConfig(({ mode }) => {
     server: {
       host: true,
       allowedHosts: true,
+      watch: {
+        ignored: [
+          '**/.cursor/**',
+          '**/Lumiere_Lite_Backend/**',
+          '**/docs/**',
+          '**/supabase/**',
+          '**/.git/**',
+        ],
+      },
     },
   }
 })

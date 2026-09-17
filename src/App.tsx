@@ -36,6 +36,7 @@ import { WarehouseMemberPage } from '@/pages/WarehouseMemberPage'
 import { ManningPage } from '@/pages/ManningPage'
 import { ProductionManagerPage } from '@/pages/ProductionManagerPage'
 import { InventoryOfficerPage } from '@/pages/InventoryOfficerPage'
+import { AssetAllocationKioskPage } from '@/pages/AssetAllocationKioskPage'
 import { PinSetupScreen } from '@/pages/PinSetupScreen'
 import { TempPasswordResetScreen } from '@/pages/TempPasswordResetScreen'
 import { PlannerProvider } from '@/lib/planner'
@@ -111,6 +112,8 @@ function Router() {
       return <ProductionManagerPage />
     case 'inventory-officer':
       return <InventoryOfficerPage />
+    case 'assets':
+      return <AssetAllocationKioskPage />
     case 'workforce':
       return <AdminWorkforcePage />
     case 'security-audit':
@@ -163,7 +166,7 @@ function Gate() {
   const hasWorkforceHighlight =
     new URLSearchParams(window.location.search).has('highlight') || Boolean(window.history.state?.highlight)
   const urlParamRoute = (new URLSearchParams(window.location.search).get('route') || window.location.pathname.replace('/', '')) as Route | null
-  const validRoutes = new Set(['dashboard', 'registry', 'replenishment', 'logs', 'damage', 'inventory', 'warehouse-logs', 'crew', 'deployments', 'dispatch', 'event-detail', 'canvas', 'canvas-workspace', 'field-ops', 'warehouse-lead', 'warehouse-member', 'manning', 'production-manager', 'inventory-officer', 'workforce', 'security-audit', 'rbac', 'overview'])
+  const validRoutes = new Set(['dashboard', 'registry', 'replenishment', 'logs', 'damage', 'inventory', 'warehouse-logs', 'crew', 'deployments', 'dispatch', 'event-detail', 'canvas', 'canvas-workspace', 'field-ops', 'warehouse-lead', 'warehouse-member', 'manning', 'production-manager', 'inventory-officer', 'workforce', 'security-audit', 'rbac', 'overview', 'assets'])
   const targetUrlRoute = urlParamRoute && validRoutes.has(urlParamRoute) ? urlParamRoute : null
 
   const initialRoute = targetUrlRoute || (isManningOfficer

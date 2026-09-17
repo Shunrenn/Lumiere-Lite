@@ -56,6 +56,11 @@ const emptyDraft: NewEventDraft = {
   ingressDate: '',
   ingressTime: '08:00',
   fullStop: '23:00',
+  returnDate: '',
+  eventPegs: '',
+  colorPalette: '',
+  brandingAndTextures: '',
+  notes: '',
 }
 
 const labelClass =
@@ -122,6 +127,11 @@ export function RegisterEventDrawer({ open, onClose, event = null, mode = 'creat
         installationStart: normalizeTimeFormat(event.installationStart),
         installationEnd: normalizeTimeFormat(event.installationEnd),
         moodPlan: event.moodPlan ?? '',
+        geoClass: 'Local',
+        ingressDate: event.installationStart || event.targetDate,
+        ingressTime: '08:00',
+        fullStop: '23:00',
+        returnDate: event.installationEnd || event.targetDate,
       })
     } else {
       setDraft(emptyDraft)
@@ -351,22 +361,23 @@ export function RegisterEventDrawer({ open, onClose, event = null, mode = 'creat
               </div>
             </div>
 
-            {/* Geographic Classification & Logistics Ingress/Fullstop */}
+            {/* Geographic Classification & Logistics Ingress/Return/Fullstop */}
+            <div>
+              <label className={labelClass} htmlFor="ev-geo">
+                Geographic Scope
+              </label>
+              <select
+                id="ev-geo"
+                className={`${inputClass} appearance-none`}
+                value={draft.geoClass || 'Local'}
+                onChange={(e) => set('geoClass', e.target.value)}
+              >
+                <option value="Local">Local (NCR / Metro - 1-day transit buffer)</option>
+                <option value="National">National (Regional - 3-day transit buffer)</option>
+              </select>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelClass} htmlFor="ev-geo">
-                  Geographic Scope
-                </label>
-                <select
-                  id="ev-geo"
-                  className={`${inputClass} appearance-none`}
-                  value={draft.geoClass || 'Local'}
-                  onChange={(e) => set('geoClass', e.target.value)}
-                >
-                  <option value="Local">Local (NCR / Metro)</option>
-                  <option value="National">National (Regional)</option>
-                </select>
-              </div>
               <div>
                 <label className={labelClass} htmlFor="ev-ingress-date">
                   Ingress Date
@@ -377,6 +388,18 @@ export function RegisterEventDrawer({ open, onClose, event = null, mode = 'creat
                   className={inputClass}
                   value={draft.ingressDate || (draft.targetDate ? draft.targetDate : '')}
                   onChange={(e) => set('ingressDate', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="ev-return-date">
+                  Egress / Return Date
+                </label>
+                <input
+                  id="ev-return-date"
+                  type="date"
+                  className={inputClass}
+                  value={draft.returnDate || (draft.targetDate ? draft.targetDate : '')}
+                  onChange={(e) => set('returnDate', e.target.value)}
                 />
               </div>
             </div>

@@ -10,7 +10,7 @@ Derived from PRD-F1, PRD-F5, PRD-F15.
 Responsibilities:
 - Replace hardcoded http://localhost:8080 in auth.tsx, damageApi.ts, and any new callers.
 - Canvas allocations call POST /api/reservations.
-- Production build fails closed if the API URL is localhost HTTP.
+- Production build fails clo                      sed if the API URL is localhost HTTP.
 
 Never put JWT secret or removal vendor key in Vercel. Never keep a dual localhost fallback in production builds. Never call the vision vendor from the browser. The API IBackgroundRemovalService is the catalog cutout path. SPA chroma-key is not the model.
 

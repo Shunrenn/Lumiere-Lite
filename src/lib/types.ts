@@ -28,6 +28,7 @@ export type Route =
   | 'manning'
   | 'production-manager'
   | 'inventory-officer'
+  | 'assets'
 
 /* ---------- Procurement / Replenishment ---------- */
 
@@ -205,6 +206,12 @@ export interface NewEventDraft {
   ingressDate?: string
   ingressTime?: string
   fullStop?: string
+  returnDate?: string
+  eventPegs?: string
+  colorPalette?: string
+  brandingAndTextures?: string
+  notes?: string
+  estimatedRevenue?: number
 }
 
 /* ---------- Account / User Actions ---------- */
